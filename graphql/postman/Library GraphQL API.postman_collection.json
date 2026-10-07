@@ -170,6 +170,44 @@
               }
             }
           ]
+        },
+        {
+          "name": "List Publishers with Authors and Books",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query PublishersWithAuthorsAndBooks {\n  publishers {\n    id\n    name\n    authors {\n      id\n      name\n      surname\n      books {\n        id\n        title\n        publishingYear\n      }\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "List all publishers and, in the same request, each publisher's authors and each author's books (Publisher -> Authors -> Books). Demonstrates GraphQL nesting."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"No GraphQL errors\", () => pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined);",
+                  "pm.test(\"Publishers nest authors which nest books\", () => {",
+                  "  const author = json.data.publishers.flatMap(p => p.authors).find(a => a.books.length > 0);",
+                  "  pm.expect(author, \"expected at least one author with books\").to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -699,6 +737,423 @@
                   "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
                   "pm.test(\"Error code is CONFLICT\", () => pm.expect(json.errors[0].extensions.code).to.eql(\"CONFLICT\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Advantages (notes.md)",
+      "description": "One request per advantage listed in graphql/notes.md, so the advantages can be shown live during the presentation.",
+      "item": [
+        {
+          "name": "Granularity - only the fields you need",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Granularity {\n  publishers {\n    id\n    name\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Advantage: granularity. The same endpoint returns a light object (id + name) or a heavy one; the client decides exactly which fields it needs, so it never over-fetches."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"No GraphQL errors\", () => pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined);",
+                  "pm.test(\"Each publisher contains only the requested fields\", () => {",
+                  "  pm.expect(Object.keys(json.data.publishers[0]).sort()).to.eql([\"id\", \"name\"]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nesting - one request walks the graph",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Nested {\n  publishers {\n    id\n    name\n    authors {\n      id\n      name\n      surname\n      books {\n        id\n        title\n        publishingYear\n      }\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Advantage: easy nesting + less latency. Publisher -> authors -> books is fetched in ONE request. In REST this is usually several round trips (GET /publishers, then /publishers/{id}/authors, then /books?authorId=...)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"No GraphQL errors\", () => pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined);",
+                  "pm.test(\"Publishers expose nested authors\", () => pm.expect(Array.isArray(json.data.publishers[0].authors)).to.be.true);",
+                  "pm.test(\"Nested authors expose their books\", () => {",
+                  "  const author = json.data.publishers.flatMap(p => p.authors).find(a => a.books.length > 0);",
+                  "  pm.expect(author, \"expected at least one author with books\").to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fragments - reusable field sets",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query WithFragments {\n  publishers {\n    ...PublisherSummary\n    authors {\n      ...AuthorSummary\n      books { ...BookSummary }\n    }\n  }\n}\n\nfragment PublisherSummary on Publisher { id name }\nfragment AuthorSummary on Author { id name surname }\nfragment BookSummary on Book { id title publishingYear }",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Advantage: fragments for reusability. Named field sets (fragments) can be reused across queries and kept next to the component that needs them."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"No GraphQL errors (fragments resolved)\", () => pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined);",
+                  "pm.test(\"Fragments produced exactly the requested fields\", () => {",
+                  "  pm.expect(json.data.publishers[0]).to.have.all.keys(\"id\", \"name\", \"authors\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One round trip - many resources (aliases)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Dashboard {\n  featuredBook: book(id: {{demoBookId}}) { id title publishingYear }\n  allAuthors: authors { id name }\n  allPublishers: publishers { id name }\n  hits: search(term: \"{{searchTerm}}\") { __typename }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Advantage: less latency. Aliases let one request return several independent resources at once (a book, all authors, all publishers and a search) instead of four separate HTTP calls."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"No GraphQL errors\", () => pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined);",
+                  "pm.test(\"Four resources returned in a single request\", () => {",
+                  "  pm.expect(json.data).to.have.all.keys(\"featuredBook\", \"allAuthors\", \"allPublishers\", \"hits\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unions - heterogeneous search results",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query SearchUnion {\n  search(term: \"{{searchTerm}}\") {\n    __typename\n    ... on Book { id title }\n    ... on Author { id name surname }\n    ... on Publisher { id name }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Advantage: GraphQL unions. search returns a SearchResult union (Book | Author | Publisher); the client narrows each hit with inline fragments. This is hard to express cleanly in REST."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"No GraphQL errors\", () => pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined);",
+                  "pm.test(\"Union members are typed via __typename\", () => {",
+                  "  const allowed = [\"Book\", \"Author\", \"Publisher\"];",
+                  "  json.data.search.forEach(hit => pm.expect(allowed).to.include(hit.__typename));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "No versioning - the schema is the contract",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query SchemaContract {\n  __schema {\n    types {\n      name\n      kind\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Advantage: no versioning. Clients discover the API at runtime via introspection. New fields and types can be added without breaking existing clients, so there is no need for /v1, /v2, ..."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"No GraphQL errors\", () => pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined);",
+                  "const names = json.data.__schema.types.map(t => t.name);",
+                  "pm.test(\"Clients can discover the contract at runtime\", () => {",
+                  "  pm.expect(names).to.include.members([\"Book\", \"Author\", \"Publisher\", \"SearchResult\"]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Disadvantages (notes.md)",
+      "description": "One request per disadvantage listed in graphql/notes.md, so the disadvantages can be shown live during the presentation.",
+      "item": [
+        {
+          "name": "One URL, always POST (caching is harder)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query ListAuthorsSimple {\n  authors {\n    id\n    name\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Disadvantage: caching is harder + 'not RESTful but uses POST'. Even a read is a POST to the same URL, so HTTP caches, CDNs and browsers cannot cache by URL + method the way they can with GET /authors."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"The read is a POST to the single /graphql URL\", () => {",
+                  "  pm.expect(pm.request.method).to.eql(\"POST\");",
+                  "  pm.expect(pm.request.url.toString()).to.include(\"/graphql\");",
+                  "});",
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Errors are HTTP 200 (no status codes)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query MissingBook {\n  book(id: 999999) {\n    id\n    title\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Disadvantage: everything is HTTP 200. A failed operation is not signalled by the status code; the client must inspect the JSON errors array and extensions.code (NOT_FOUND)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP status is 200 even though the operation failed\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"The failure is only visible inside the errors array\", () => pm.expect(json.errors[0].extensions.code).to.eql(\"NOT_FOUND\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nesting can be problematic (N+1, unscoped)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query DeepNesting {\n  publishers {\n    id\n    name\n    authors {\n      id\n      name\n      books {\n        id\n        title\n        author { id name }\n        publisher { id name }\n      }\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Disadvantage: nesting can be problematic. Each nested field triggers its own database query (the N+1 problem), the payload explodes, and a nested list is NOT scoped to its parent: authors.books returns ALL of an author's books, not only the ones from the parent publisher. Guard with depth/complexity limits and batching (dataloaders)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"No GraphQL errors\", () => pm.expect(json.errors, JSON.stringify(json.errors)).to.be.undefined);",
+                  "pm.test(\"A single request can return a very large payload\", () => {",
+                  "  pm.expect(JSON.stringify(json.data).length).to.be.above(1000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Strict schema - unknown field is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query UnknownField {\n  books {\n    id\n    title\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Disadvantage: learning curve / complex to implement. There is no top-level 'books' query, so the schema rejects the whole request. GraphQL is strongly typed and strict: a typo fails validation instead of silently returning null."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"The schema rejects a field that does not exist\", () => {",
+                  "  pm.expect(json.errors[0].message).to.include(\"Cannot query field\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing required variable (learning curve)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query GetBookById($id: Int!) {\n  book(id: $id) {\n    id\n    title\n  }\n}",
+                "variables": "{}"
+              }
+            },
+            "url": {
+              "raw": "{{graphqlUrl}}",
+              "host": ["{{graphqlUrl}}"]
+            },
+            "description": "Disadvantage: learning curve. Variables are typed and required ones must be supplied; forgetting one is a hard error (HTTP 400) raised before any resolver runs. The same query string can be reused with different variables."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"The request is rejected with HTTP 400 before execution\", () => pm.response.to.have.status(400));",
+                  "const json = pm.response.json();",
+                  "pm.test(\"A missing required variable is a hard error\", () => {",
+                  "  pm.expect(json.errors[0].message).to.include(\"was not provided\");",
+                  "});"
                 ]
               }
             }

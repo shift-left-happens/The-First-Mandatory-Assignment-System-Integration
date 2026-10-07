@@ -48,6 +48,11 @@ export const resolvers = {
     authors: () => repository.listAuthors(),
 
     publishers: () => repository.listPublishers(),
+
+    search: (_parent, { term }) => {
+      assertRequiredString(term, 'term');
+      return repository.search(term);
+    },
   },
 
   Mutation: {
@@ -129,4 +134,34 @@ export const resolvers = {
       return repository.deletePublisherById(id);
     },
   },
+
+  /* ------------------------- Relationships ------------------------- */
+  //
+  // These resolvers implement the nesting: Publisher -> authors -> books and the
+  // reverse links on Book. Each one runs only when the client actually selects
+  // the field, and it receives the already-resolved parent object.
+
+  Book: {
+    author: (parent) => repository.findAuthorById(parent.authorId),
+    publisher: (parent) => repository.findPublisherById(parent.publishingCompanyId),
+  },
+
+  Author: {
+    books: (parent) => repository.listBooksByAuthorId(parent.id),
+  },
+
+  Publisher: {
+    authors: (parent) => repository.listAuthorsByPublisherId(parent.id),
+    books: (parent) => repository.listBooksByPublisherId(parent.id),
+  },
+
+  SearchResult: {
+    // Tells GraphQL which concrete type each `search` hit is, based on its shape.
+    __resolveType: (obj) => {
+      if (Object.prototype.hasOwnProperty.call(obj, 'title')) return 'Book';
+      if (Object.prototype.hasOwnProperty.call(obj, 'surname')) return 'Author';
+      return 'Publisher';
+    },
+  },
 };
+

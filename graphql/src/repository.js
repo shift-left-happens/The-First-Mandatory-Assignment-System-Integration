@@ -64,6 +64,20 @@ export function countBooksByPublisherId(publisherId) {
     .get(publisherId).total;
 }
 
+export function listBooksByAuthorId(authorId) {
+  return db
+    .prepare('SELECT * FROM tbook WHERE nAuthorID = ? ORDER BY nBookID')
+    .all(authorId)
+    .map(toBook);
+}
+
+export function listBooksByPublisherId(publisherId) {
+  return db
+    .prepare('SELECT * FROM tbook WHERE nPublishingCompanyID = ? ORDER BY nBookID')
+    .all(publisherId)
+    .map(toBook);
+}
+
 /* ------------------------------ Authors ------------------------------ */
 
 export function findAuthorById(id) {
@@ -72,6 +86,20 @@ export function findAuthorById(id) {
 
 export function listAuthors() {
   return db.prepare('SELECT * FROM tauthor ORDER BY nAuthorID').all().map(toAuthor);
+}
+
+// The distinct authors of the books published by the given publishing company.
+export function listAuthorsByPublisherId(publisherId) {
+  return db
+    .prepare(
+      `SELECT DISTINCT a.*
+         FROM tauthor a
+         INNER JOIN tbook b ON b.nAuthorID = a.nAuthorID
+        WHERE b.nPublishingCompanyID = ?
+        ORDER BY a.nAuthorID`
+    )
+    .all(publisherId)
+    .map(toAuthor);
 }
 
 export function insertAuthor({ name, surname }) {
@@ -113,3 +141,32 @@ export function updatePublisherById(id, { name }) {
 export function deletePublisherById(id) {
   return db.prepare('DELETE FROM tpublishingcompany WHERE nPublishingCompanyID = ?').run(id).changes > 0;
 }
+
+/* ------------------------------ Search ------------------------------- */
+
+// Case-insensitive substring search across the three tables. Each result keeps
+// the shape of its own type, which is what lets the `SearchResult` union tell
+// them apart in the resolver (`__resolveType`).
+const SEARCH_LIMIT = 25;
+
+export function search(term) {
+  const like = `%${term}%`;
+
+  const books = db
+    .prepare('SELECT * FROM tbook WHERE cTitle LIKE ? ORDER BY nBookID LIMIT ?')
+    .all(like, SEARCH_LIMIT)
+    .map(toBook);
+
+  const authors = db
+    .prepare('SELECT * FROM tauthor WHERE cName LIKE ? OR cSurname LIKE ? ORDER BY nAuthorID LIMIT ?')
+    .all(like, like, SEARCH_LIMIT)
+    .map(toAuthor);
+
+  const publishers = db
+    .prepare('SELECT * FROM tpublishingcompany WHERE cName LIKE ? ORDER BY nPublishingCompanyID LIMIT ?')
+    .all(like, SEARCH_LIMIT)
+    .map(toPublisher);
+
+  return [...books, ...authors, ...publishers];
+}
+

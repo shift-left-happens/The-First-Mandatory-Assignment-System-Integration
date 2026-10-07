@@ -79,23 +79,31 @@ type Book {
   authorId: Int!
   publishingCompanyId: Int!
   publishingYear: Int!
+  author: Author
+  publisher: Publisher
 }
 
 type Author {
   id: Int!
   name: String!
   surname: String!
+  books: [Book!]!
 }
 
 type Publisher {
   id: Int!
   name: String!
+  authors: [Author!]!
+  books: [Book!]!
 }
+
+union SearchResult = Book | Author | Publisher
 
 type Query {
   book(id: Int!): Book
   authors: [Author!]!
   publishers: [Publisher!]!
+  search(term: String!): [SearchResult!]!
 }
 
 type Mutation {
@@ -116,6 +124,61 @@ type Mutation {
 > The `Book.publishingCompanyId` field name matches the REST/SOAP models and the
 > assignment's `Book` type, so the same field name is used as an argument for
 > `createBook` / `updateBook` as well.
+
+---
+
+# Relationships and nesting
+
+On top of the assignment's operations, the schema exposes the relationships
+between the three types so that a single request can walk the graph:
+
+```graphql
+query {
+  publishers {
+    id
+    name
+    authors {
+      id
+      name
+      surname
+      books {
+        id
+        title
+        publishingYear
+      }
+    }
+  }
+}
+```
+
+What each relation returns:
+
+| Field | Returns |
+|---|---|
+| `Book.author` / `Book.publisher` | The author / publisher referenced by the book's foreign keys |
+| `Author.books` | Every book written by the author |
+| `Publisher.authors` | The **distinct** authors of the books this publisher publishes |
+| `Publisher.books` | Every book published by the publisher |
+
+> **Nesting caveat.** A nested list is **not** scoped to its parent. In
+> `publishers { authors { books } }` the `books` field returns *all* books by
+> that author, not only the ones from the enclosing publisher. This is normal
+> GraphQL behaviour and a good point to discuss in the presentation (see the
+> **Disadvantages** folder in the Postman collection).
+
+`search(term)` returns a `SearchResult` **union** (`Book | Author | Publisher`),
+which clients narrow with inline fragments:
+
+```graphql
+query {
+  search(term: "Rowling") {
+    __typename
+    ... on Book { id title }
+    ... on Author { id name surname }
+    ... on Publisher { id name }
+  }
+}
+```
 
 The schema is defined in **`src/schema.js`**. At runtime it can also be retrieved
 through GraphQL **introspection**:
@@ -186,6 +249,40 @@ query {
   publishers {
     id
     name
+  }
+}
+```
+
+## List publishers with their authors and books (nesting)
+
+```graphql
+query {
+  publishers {
+    id
+    name
+    authors {
+      id
+      name
+      surname
+      books {
+        id
+        title
+        publishingYear
+      }
+    }
+  }
+}
+```
+
+## Search across books, authors and publishers (union)
+
+```graphql
+query {
+  search(term: "Rowling") {
+    __typename
+    ... on Book { id title }
+    ... on Author { id name surname }
+    ... on Publisher { id name }
   }
 }
 ```
@@ -340,7 +437,7 @@ npm run smoke
 Expected output ends with:
 
 ```text
-18 passed, 0 failed
+22 passed, 0 failed
 ```
 
 ## Manual testing
@@ -372,15 +469,21 @@ Import both into Postman, select the **Library GraphQL Environment**, and run th
 requests. The collection contains:
 
 - **Schema** — Schema Introspection (returns the full schema)
-- **Queries** — Get Book by ID, List Authors, List Publishers
+- **Queries** — Get Book by ID, List Authors, List Publishers, List Publishers with Authors and Books
 - **Book Mutations** — Create / Update / Delete
 - **Author Mutations** — Create / Update / Delete
 - **Publisher Mutations** — Create / Update / Delete
 - **Error Handling** — not found, validation, and delete-conflict cases
+- **Advantages (notes.md)** — one request per GraphQL advantage (granularity, nesting,
+  fragments, one round trip, unions, no versioning)
+- **Disadvantages (notes.md)** — one request per GraphQL disadvantage (POST-only / caching,
+  errors are HTTP 200, problematic nesting, strict schema, required variables)
 
 The create requests save the new ID into the `bookId` / `authorId` /
 `publisherId` environment variables, so the update and delete requests reuse the
-same IDs automatically.
+same IDs automatically. The **Advantages** and **Disadvantages** folders use two
+extra variables: `searchTerm` (default `Rowling`) and `demoBookId` (default
+`1000`, a stable book that the mutation requests never touch).
 
 ---
 
@@ -404,6 +507,7 @@ graphql/
 ├── docker-compose.yml
 ├── .env.example
 ├── package.json
+├── GUIDE.md            # GraphQL learning guide (like the SOAP guide)
 └── README.md
 ```
 
@@ -422,6 +526,7 @@ graphql/
 
 ## Related documentation
 
+- [GraphQL Learning Guide](GUIDE.md)
 - [Project README](../README.md)
 - [REST API](../rest/README.md)
 - [SOAP API](../soap/README.md)
