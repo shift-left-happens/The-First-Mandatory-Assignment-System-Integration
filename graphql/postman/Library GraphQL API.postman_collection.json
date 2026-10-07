@@ -67,7 +67,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query GetBookById($id: Int!) {\n  book(id: $id) {\n    id\n    title\n    authorId\n    publishingCompanyId\n    publishingYear\n  }\n}",
+                "query": "query GetBookById($id: Int!) {\n  book(id: $id) {\n    id\n    title\n    publishingYear\n    author { id name surname }\n    publisher { id name }\n  }\n}",
                 "variables": "{\n  \"id\": {{bookId}}\n}"
               }
             },
@@ -227,7 +227,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation CreateBook($title: String!, $authorId: Int!, $publishingCompanyId: Int!, $publishingYear: Int!) {\n  createBook(title: $title, authorId: $authorId, publishingCompanyId: $publishingCompanyId, publishingYear: $publishingYear) {\n    id\n    title\n    authorId\n    publishingCompanyId\n    publishingYear\n  }\n}",
+                "query": "mutation CreateBook($title: String!, $authorId: Int!, $publishingCompanyId: Int!, $publishingYear: Int!) {\n  createBook(title: $title, authorId: $authorId, publishingCompanyId: $publishingCompanyId, publishingYear: $publishingYear) {\n    id\n    title\n    publishingYear\n    author { id }\n    publisher { id }\n  }\n}",
                 "variables": "{\n  \"title\": \"New Book\",\n  \"authorId\": {{authorId}},\n  \"publishingCompanyId\": {{publisherId}},\n  \"publishingYear\": 2024\n}"
               }
             },
@@ -268,7 +268,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation UpdateBook($id: Int!, $title: String!, $authorId: Int!, $publishingCompanyId: Int!, $publishingYear: Int!) {\n  updateBook(id: $id, title: $title, authorId: $authorId, publishingCompanyId: $publishingCompanyId, publishingYear: $publishingYear) {\n    id\n    title\n    authorId\n    publishingCompanyId\n    publishingYear\n  }\n}",
+                "query": "mutation UpdateBook($id: Int!, $title: String!, $authorId: Int!, $publishingCompanyId: Int!, $publishingYear: Int!) {\n  updateBook(id: $id, title: $title, authorId: $authorId, publishingCompanyId: $publishingCompanyId, publishingYear: $publishingYear) {\n    id\n    title\n    publishingYear\n    author { id }\n    publisher { id }\n  }\n}",
                 "variables": "{\n  \"id\": {{bookId}},\n  \"title\": \"Updated Book\",\n  \"authorId\": {{authorId}},\n  \"publishingCompanyId\": {{publisherId}},\n  \"publishingYear\": 2025\n}"
               }
             },
@@ -638,7 +638,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation CreateBook($title: String!, $authorId: Int!, $publishingCompanyId: Int!, $publishingYear: Int!) {\n  createBook(title: $title, authorId: $authorId, publishingCompanyId: $publishingCompanyId, publishingYear: $publishingYear) {\n    id\n    title\n    authorId\n    publishingCompanyId\n    publishingYear\n  }\n}",
+                "query": "mutation CreateBook($title: String!, $authorId: Int!, $publishingCompanyId: Int!, $publishingYear: Int!) {\n  createBook(title: $title, authorId: $authorId, publishingCompanyId: $publishingCompanyId, publishingYear: $publishingYear) {\n    id\n    title\n  }\n}",
                 "variables": "{\n  \"title\": \"Invalid Year\",\n  \"authorId\": {{authorId}},\n  \"publishingCompanyId\": {{publisherId}},\n  \"publishingYear\": 1800\n}"
               }
             },
@@ -677,7 +677,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation CreateBook($title: String!, $authorId: Int!, $publishingCompanyId: Int!, $publishingYear: Int!) {\n  createBook(title: $title, authorId: $authorId, publishingCompanyId: $publishingCompanyId, publishingYear: $publishingYear) {\n    id\n    title\n    authorId\n    publishingCompanyId\n    publishingYear\n  }\n}",
+                "query": "mutation CreateBook($title: String!, $authorId: Int!, $publishingCompanyId: Int!, $publishingYear: Int!) {\n  createBook(title: $title, authorId: $authorId, publishingCompanyId: $publishingCompanyId, publishingYear: $publishingYear) {\n    id\n    title\n  }\n}",
                 "variables": "{\n  \"title\": \"Bad Author\",\n  \"authorId\": 999999,\n  \"publishingCompanyId\": {{publisherId}},\n  \"publishingYear\": 2024\n}"
               }
             },

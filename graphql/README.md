@@ -76,8 +76,6 @@ Configuration can be overridden with environment variables:
 type Book {
   id: Int!
   title: String!
-  authorId: Int!
-  publishingCompanyId: Int!
   publishingYear: Int!
   author: Author
   publisher: Publisher
@@ -121,9 +119,11 @@ type Mutation {
 }
 ```
 
-> The `Book.publishingCompanyId` field name matches the REST/SOAP models and the
-> assignment's `Book` type, so the same field name is used as an argument for
-> `createBook` / `updateBook` as well.
+> `Book` no longer exposes the raw foreign keys (`authorId` /
+> `publishingCompanyId`). A book's author and publisher are read through the
+> `author` / `publisher` fields. The mutations still take `authorId` and
+> `publishingCompanyId` as **arguments**, because a create/update has to say which
+> author and publisher to point at.
 
 ---
 
@@ -223,9 +223,9 @@ query {
   book(id: 1000) {
     id
     title
-    authorId
-    publishingCompanyId
     publishingYear
+    author { id name surname }
+    publisher { id name }
   }
 }
 ```

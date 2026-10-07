@@ -16,14 +16,12 @@ export const typeDefs = /* GraphQL */ `
   type Book {
     id: Int!
     title: String!
-    authorId: Int!
-    publishingCompanyId: Int!
     publishingYear: Int!
 
-    "The author of this book (resolved from authorId)."
+    "The author of this book."
     author: Author
 
-    "The publishing company of this book (resolved from publishingCompanyId)."
+    "The publishing company of this book."
     publisher: Publisher
   }
 

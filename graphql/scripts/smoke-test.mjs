@@ -84,7 +84,7 @@ async function main() {
     await graphql(
       `mutation ($a: Int!, $p: Int!) {
          createBook(title: "Smoke Test Book", authorId: $a, publishingCompanyId: $p, publishingYear: 2024) {
-           id title authorId publishingCompanyId publishingYear
+           id title publishingYear author { id } publisher { id }
          }
        }`,
       { a: author.id, p: publisher.id }
@@ -92,7 +92,7 @@ async function main() {
   ).data.createBook;
   check(
     'createBook returns the new book',
-    book.title === 'Smoke Test Book' && book.authorId === author.id && book.publishingCompanyId === publisher.id
+    book.title === 'Smoke Test Book' && book.author?.id === author.id && book.publisher?.id === publisher.id
   );
 
   // --- Read ---

@@ -152,8 +152,6 @@ Introspection** request from the Postman collection). You get the same picture t
 type Book {
   id: Int!                 # always present, never null
   title: String!
-  authorId: Int!
-  publishingCompanyId: Int!
   publishingYear: Int!
   author: Author           # may be null (nullable relationship)
   publisher: Publisher
