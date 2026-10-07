@@ -17,16 +17,17 @@ The API uses SOAP messages and XML Schema (XSD) types.
 The SOAP service is exposed through an HTTP endpoint.
 
 ```text
-http://localhost:<PORT>/<SERVICE_PATH>
+http://localhost:5080/LibraryService.svc
 ```
 
 The generated or exposed WSDL can be accessed through:
 
 ```text
-http://localhost:<PORT>/<SERVICE_PATH>?wsdl
+http://localhost:5080/LibraryService.svc?wsdl         (WSDL with imported XSDs)
+http://localhost:5080/LibraryService.svc?singleWsdl   (single flattened WSDL, includes the XSD types)
 ```
 
-> Update the URLs above according to the implementation.
+Namespace: `http://library.example/soap` &middot; SOAP 1.1 (`BasicHttpBinding`), document/literal.
 
 ---
 
@@ -413,21 +414,64 @@ The XSD/WSDL definitions are included with the SOAP implementation.
 
 # Running the API
 
-> Update these commands according to the project's implementation.
+Implemented in C# on **.NET 10** with **CoreWCF** (SOAP/WSDL), **Dapper** and **SQLite**.
 
 ```bash
-# Install dependencies
-<install-command>
-
-# Start SOAP service
-<run-command>
+cd soap
+dotnet run --project LibrarySoap
 ```
 
-Once running, the WSDL should be available at:
+The service listens on `http://localhost:5080`.
+
+**Database:** on first start the shared `database/library.db` is copied to
+`LibrarySoap/library.dev.db` (gitignored), and the service only ever reads and writes that copy.
+You can test freely without changing the tracked database. To reset to the original data,
+stop the service and delete `library.dev.db`. Paths are set in `LibrarySoap/appsettings.json`
+(`Database:Source`, `Database:WorkingCopy`).
+
+## Project layout
+
+Kept flat on purpose: one contract, one implementation, one endpoint, one WSDL.
 
 ```text
-http://localhost:<PORT>/<SERVICE_PATH>?wsdl
+soap/
+├── GUIDE.md                         learning guide: SOAP concepts mapped to this code
+├── LibrarySoap.slnx
+├── LibrarySoap/
+│   ├── Program.cs                   host setup, endpoint, WSDL publishing
+│   ├── ILibraryService.cs           [ServiceContract]: all 14 operations (= the WSDL)
+│   ├── LibraryService.cs            implementation: validation and business rules
+│   ├── Models.cs                    [DataContract] Book, Author, PublishingCompany (= XSD types)
+│   ├── Faults.cs                    fault detail types + Fault.NotFound/Validation/Conflict helpers
+│   ├── Repositories.cs              SQL for tbook, tauthor, tpublishingcompany
+│   └── Db.cs                        working copy of the database + connections
+└── postman/                         collection + environment
 ```
+
+New to SOAP? Start with [GUIDE.md](GUIDE.md).
+
+## Request format
+
+Every operation is an HTTP `POST` to the endpoint with:
+
+```text
+Content-Type: text/xml; charset=utf-8
+SOAPAction: "http://library.example/soap/LibraryService/<Operation>"
+```
+
+```xml
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Body>
+    <GetBookById xmlns="http://library.example/soap"><id>1000</id></GetBookById>
+  </soapenv:Body>
+</soapenv:Envelope>
+```
+
+Faults come back as HTTP `500` with a SOAP `<Fault>` whose `<detail>` holds `NotFoundFault`,
+`ValidationFault` or `ConflictFault`.
+
+> Known limitation: the code-first contract cannot express `publishingYear >= 1900` as an XSD
+> restriction, so that rule is enforced at runtime and reported as a `ValidationFault`.
 
 ---
 
@@ -439,6 +483,15 @@ The SOAP service can be tested using:
 - SoapUI
 - Insomnia
 - Another SOAP-compatible client
+
+A ready-made Postman collection is in [`postman/`](postman/): import
+`Library-SOAP.postman_collection.json` and `Library-SOAP.postman_environment.json`, start the
+service and run the collection (it creates its own test data and deletes it again). From the
+command line:
+
+```bash
+npx newman run postman/Library-SOAP.postman_collection.json -e postman/Library-SOAP.postman_environment.json
+```
 
 Testing should cover:
 
