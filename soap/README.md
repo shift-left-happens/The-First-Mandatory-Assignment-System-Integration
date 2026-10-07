@@ -421,8 +421,13 @@ cd soap
 dotnet run --project LibrarySoap
 ```
 
-The service listens on `http://localhost:5080` and uses the shared `../database/library.db`
-(path configurable in `LibrarySoap/appsettings.json`).
+The service listens on `http://localhost:5080`.
+
+**Database:** on first start the shared `database/library.db` is copied to
+`LibrarySoap/library.dev.db` (gitignored), and the service only ever reads and writes that copy.
+You can test freely without changing the tracked database. To reset to the original data,
+stop the service and delete `library.dev.db`. Paths are set in `LibrarySoap/appsettings.json`
+(`Database:Source`, `Database:WorkingCopy`).
 
 ## Project layout
 

@@ -2,17 +2,30 @@ using Microsoft.Data.Sqlite;
 
 namespace LibrarySoap.Shared;
 
-/// <summary>Opens connections to the shared SQLite database (path from appsettings.json).</summary>
+/// <summary>
+/// Opens connections to a local working copy of the shared SQLite database.
+/// On first use, Database:Source (the tracked database/library.db) is copied to Database:WorkingCopy
+/// (gitignored). All reads and writes go to the copy, so the tracked file never changes.
+/// Delete the copy to reset to the original data.
+/// </summary>
 public class Db
 {
     private readonly string _connectionString;
 
-    public Db(IConfiguration config, IHostEnvironment env)
+    public Db(IConfiguration config, IHostEnvironment env, ILogger<Db> logger)
     {
-        var builder = new SqliteConnectionStringBuilder(config.GetConnectionString("Library"));
-        // A relative path is resolved from the project folder, so it works no matter where you start the app from.
-        builder.DataSource = Path.GetFullPath(Path.Combine(env.ContentRootPath, builder.DataSource));
-        _connectionString = builder.ToString();
+        // Relative paths are resolved from the project folder, so it works no matter where you start the app from.
+        var source = Path.GetFullPath(Path.Combine(env.ContentRootPath, config["Database:Source"]!));
+        var workingCopy = Path.GetFullPath(Path.Combine(env.ContentRootPath, config["Database:WorkingCopy"]!));
+
+        if (!File.Exists(workingCopy))
+        {
+            File.Copy(source, workingCopy);
+            logger.LogInformation("Created working copy {WorkingCopy} from {Source}", workingCopy, source);
+        }
+        logger.LogInformation("Using database {WorkingCopy} (delete it to reset to the original data)", workingCopy);
+
+        _connectionString = new SqliteConnectionStringBuilder { DataSource = workingCopy }.ToString();
     }
 
     public SqliteConnection Open()

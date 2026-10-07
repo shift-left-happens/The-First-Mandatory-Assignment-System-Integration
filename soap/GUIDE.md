@@ -196,6 +196,8 @@ Postman
 Here is what each layer is responsible for:
 - **CoreWCF**: everything SOAP-specific (XML, envelopes, WSDL). Our code never touches XML.
 - **`LibraryService.*.cs`**: business rules (validation, existence checks, delete conflicts).
+- **`Shared/Db.cs`**: opens connections to `library.dev.db`, a local copy of the shared database
+  made on first start, so testing never changes the tracked `database/library.db`.
 - **`*Repository.cs`**: SQL only. The old database has odd column names (`nBookID`, `cTitle`),
   and the repositories alias them (`nBookID AS Id`) so the rest of the code never sees them.
 
@@ -312,4 +314,5 @@ Each takes 5–15 minutes and touches one feature folder.
 | Change a data type | `Features/<Feature>/<Entity>.cs` |
 | Change SQL | `Features/<Feature>/<Entity>Repository.cs` |
 | Change validation rules or faults | `Shared/Validate.cs`, `Shared/Faults.cs` |
-| Change the database path | `appsettings.json` |
+| Change the database path | `appsettings.json` (`Database:Source`, `Database:WorkingCopy`) |
+| Reset the data | Stop the service, delete `LibrarySoap/library.dev.db` |
