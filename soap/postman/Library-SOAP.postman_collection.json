@@ -1,0 +1,1466 @@
+{
+  "info": {
+    "name": "Library SOAP API",
+    "description": "Run the whole collection in order (Collection Runner / newman). Creates test data, exercises every operation and fault, then deletes the test data.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0 - WSDL",
+      "item": [
+        {
+          "name": "GET WSDL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Is a WSDL', () => pm.expect(pm.response.text()).to.include('wsdl:definitions'));",
+                  "['Book','Author','PublishingCompany','NotFoundFault','ValidationFault','ConflictFault'].forEach(t => pm.test('WSDL describes '+t, () => pm.expect(pm.response.text()).to.include('name=\"'+t+'\"')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}?singleWsdl",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "singleWsdl",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1 - Authors",
+      "item": [
+        {
+          "name": "CreateAuthor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has CreateAuthorResponse', () => pm.expect(pm.response.text()).to.include('<CreateAuthorResponse'));",
+                  "const m = pm.response.text().match(/<CreateAuthorResult[^>]*>(\\d+)</);",
+                  "pm.test('Returned a generated id', () => pm.expect(m).to.not.be.null);",
+                  "if (m) pm.collectionVariables.set('authorId', m[1]);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreateAuthor\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreateAuthor xmlns=\"http://library.example/soap\">\n      <name>Test</name>\n      <surname>Author</surname>\n    </CreateAuthor>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GetAuthorById",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has GetAuthorByIdResponse', () => pm.expect(pm.response.text()).to.include('<GetAuthorByIdResponse'));",
+                  "pm.test(\"Body contains <Name>Test</Name>\", () => pm.expect(pm.response.text()).to.include(\"<Name>Test</Name>\"));",
+                  "pm.test(\"Body contains <Surname>Author</Surname>\", () => pm.expect(pm.response.text()).to.include(\"<Surname>Author</Surname>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetAuthorById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetAuthorById xmlns=\"http://library.example/soap\">\n      <id>{{authorId}}</id>\n    </GetAuthorById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ListAuthors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has ListAuthorsResponse', () => pm.expect(pm.response.text()).to.include('<ListAuthorsResponse'));",
+                  "pm.test(\"Body contains <Author>\", () => pm.expect(pm.response.text()).to.include(\"<Author>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/ListAuthors\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <ListAuthors xmlns=\"http://library.example/soap\"></ListAuthors>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "UpdateAuthor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has UpdateAuthorResponse', () => pm.expect(pm.response.text()).to.include('<UpdateAuthorResponse'));",
+                  "pm.test(\"Body contains true\", () => pm.expect(pm.response.text()).to.include(\"true\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/UpdateAuthor\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <UpdateAuthor xmlns=\"http://library.example/soap\">\n      <id>{{authorId}}</id>\n      <name>Updated</name>\n      <surname>Writer</surname>\n    </UpdateAuthor>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GetAuthorById (verify update)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has GetAuthorByIdResponse', () => pm.expect(pm.response.text()).to.include('<GetAuthorByIdResponse'));",
+                  "pm.test(\"Body contains <Name>Updated</Name>\", () => pm.expect(pm.response.text()).to.include(\"<Name>Updated</Name>\"));",
+                  "pm.test(\"Body contains <Surname>Writer</Surname>\", () => pm.expect(pm.response.text()).to.include(\"<Surname>Writer</Surname>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetAuthorById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetAuthorById xmlns=\"http://library.example/soap\">\n      <id>{{authorId}}</id>\n    </GetAuthorById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Publishing Companies",
+      "item": [
+        {
+          "name": "CreatePublishingCompany",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has CreatePublishingCompanyResponse', () => pm.expect(pm.response.text()).to.include('<CreatePublishingCompanyResponse'));",
+                  "const m = pm.response.text().match(/<CreatePublishingCompanyResult[^>]*>(\\d+)</);",
+                  "pm.test('Returned a generated id', () => pm.expect(m).to.not.be.null);",
+                  "if (m) pm.collectionVariables.set('publisherId', m[1]);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreatePublishingCompany\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreatePublishingCompany xmlns=\"http://library.example/soap\">\n      <name>Test Publishing</name>\n    </CreatePublishingCompany>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GetPublishingCompanyById",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has GetPublishingCompanyByIdResponse', () => pm.expect(pm.response.text()).to.include('<GetPublishingCompanyByIdResponse'));",
+                  "pm.test(\"Body contains <Name>Test Publishing</Name>\", () => pm.expect(pm.response.text()).to.include(\"<Name>Test Publishing</Name>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetPublishingCompanyById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetPublishingCompanyById xmlns=\"http://library.example/soap\">\n      <id>{{publisherId}}</id>\n    </GetPublishingCompanyById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ListPublishingCompanies",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has ListPublishingCompaniesResponse', () => pm.expect(pm.response.text()).to.include('<ListPublishingCompaniesResponse'));",
+                  "pm.test(\"Body contains <PublishingCompany>\", () => pm.expect(pm.response.text()).to.include(\"<PublishingCompany>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/ListPublishingCompanies\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <ListPublishingCompanies xmlns=\"http://library.example/soap\"></ListPublishingCompanies>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "UpdatePublishingCompany",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has UpdatePublishingCompanyResponse', () => pm.expect(pm.response.text()).to.include('<UpdatePublishingCompanyResponse'));",
+                  "pm.test(\"Body contains true\", () => pm.expect(pm.response.text()).to.include(\"true\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/UpdatePublishingCompany\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <UpdatePublishingCompany xmlns=\"http://library.example/soap\">\n      <id>{{publisherId}}</id>\n      <name>Updated Publishing</name>\n    </UpdatePublishingCompany>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GetPublishingCompanyById (verify update)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has GetPublishingCompanyByIdResponse', () => pm.expect(pm.response.text()).to.include('<GetPublishingCompanyByIdResponse'));",
+                  "pm.test(\"Body contains <Name>Updated Publishing</Name>\", () => pm.expect(pm.response.text()).to.include(\"<Name>Updated Publishing</Name>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetPublishingCompanyById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetPublishingCompanyById xmlns=\"http://library.example/soap\">\n      <id>{{publisherId}}</id>\n    </GetPublishingCompanyById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - Books",
+      "item": [
+        {
+          "name": "CreateBook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has CreateBookResponse', () => pm.expect(pm.response.text()).to.include('<CreateBookResponse'));",
+                  "const m = pm.response.text().match(/<CreateBookResult[^>]*>(\\d+)</);",
+                  "pm.test('Returned a generated id', () => pm.expect(m).to.not.be.null);",
+                  "if (m) pm.collectionVariables.set('bookId', m[1]);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreateBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreateBook xmlns=\"http://library.example/soap\">\n      <title>Test Book</title>\n      <authorId>{{authorId}}</authorId>\n      <publishingCompanyId>{{publisherId}}</publishingCompanyId>\n      <publishingYear>2024</publishingYear>\n    </CreateBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GetBookById",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has GetBookByIdResponse', () => pm.expect(pm.response.text()).to.include('<GetBookByIdResponse'));",
+                  "pm.test(\"Body contains <Title>Test Book</Title>\", () => pm.expect(pm.response.text()).to.include(\"<Title>Test Book</Title>\"));",
+                  "pm.test(\"Body contains <PublishingYear>2024</PublishingYear>\", () => pm.expect(pm.response.text()).to.include(\"<PublishingYear>2024</PublishingYear>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetBookById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetBookById xmlns=\"http://library.example/soap\">\n      <id>{{bookId}}</id>\n    </GetBookById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "UpdateBook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has UpdateBookResponse', () => pm.expect(pm.response.text()).to.include('<UpdateBookResponse'));",
+                  "pm.test(\"Body contains true\", () => pm.expect(pm.response.text()).to.include(\"true\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/UpdateBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <UpdateBook xmlns=\"http://library.example/soap\">\n      <id>{{bookId}}</id>\n      <title>Updated Book</title>\n      <authorId>{{authorId}}</authorId>\n      <publishingCompanyId>{{publisherId}}</publishingCompanyId>\n      <publishingYear>1900</publishingYear>\n    </UpdateBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GetBookById (verify update)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has GetBookByIdResponse', () => pm.expect(pm.response.text()).to.include('<GetBookByIdResponse'));",
+                  "pm.test(\"Body contains <Title>Updated Book</Title>\", () => pm.expect(pm.response.text()).to.include(\"<Title>Updated Book</Title>\"));",
+                  "pm.test(\"Body contains <PublishingYear>1900</PublishingYear>\", () => pm.expect(pm.response.text()).to.include(\"<PublishingYear>1900</PublishingYear>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetBookById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetBookById xmlns=\"http://library.example/soap\">\n      <id>{{bookId}}</id>\n    </GetBookById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 - Faults",
+      "item": [
+        {
+          "name": "NotFoundFault - GetBookById",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is NotFoundFault', () => pm.expect(pm.response.text()).to.include('<NotFoundFault '));",
+                  "pm.test(\"Detail contains <EntityType>Book</EntityType>\", () => pm.expect(pm.response.text()).to.include(\"<EntityType>Book</EntityType>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetBookById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetBookById xmlns=\"http://library.example/soap\">\n      <id>999999</id>\n    </GetBookById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "NotFoundFault - GetAuthorById",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is NotFoundFault', () => pm.expect(pm.response.text()).to.include('<NotFoundFault '));",
+                  "pm.test(\"Detail contains <EntityType>Author</EntityType>\", () => pm.expect(pm.response.text()).to.include(\"<EntityType>Author</EntityType>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetAuthorById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetAuthorById xmlns=\"http://library.example/soap\">\n      <id>999999</id>\n    </GetAuthorById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "NotFoundFault - GetPublishingCompanyById",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is NotFoundFault', () => pm.expect(pm.response.text()).to.include('<NotFoundFault '));",
+                  "pm.test(\"Detail contains <EntityType>PublishingCompany</EntityType>\", () => pm.expect(pm.response.text()).to.include(\"<EntityType>PublishingCompany</EntityType>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetPublishingCompanyById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetPublishingCompanyById xmlns=\"http://library.example/soap\">\n      <id>999999</id>\n    </GetPublishingCompanyById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "NotFoundFault - UpdateBook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is NotFoundFault', () => pm.expect(pm.response.text()).to.include('<NotFoundFault '));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/UpdateBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <UpdateBook xmlns=\"http://library.example/soap\">\n      <id>999999</id>\n      <title>x</title>\n      <authorId>{{authorId}}</authorId>\n      <publishingCompanyId>{{publisherId}}</publishingCompanyId>\n      <publishingYear>2000</publishingYear>\n    </UpdateBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "NotFoundFault - DeleteAuthor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is NotFoundFault', () => pm.expect(pm.response.text()).to.include('<NotFoundFault '));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/DeleteAuthor\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <DeleteAuthor xmlns=\"http://library.example/soap\">\n      <id>999999</id>\n    </DeleteAuthor>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ValidationFault - invalid id (0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ValidationFault', () => pm.expect(pm.response.text()).to.include('<ValidationFault '));",
+                  "pm.test(\"Detail contains <Field>id</Field>\", () => pm.expect(pm.response.text()).to.include(\"<Field>id</Field>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetBookById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetBookById xmlns=\"http://library.example/soap\">\n      <id>0</id>\n    </GetBookById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Framework fault - id is not an integer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Rejected by CoreWCF before our code runs (DeserializationFailed)', () => pm.expect(pm.response.text()).to.include('DeserializationFailed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetBookById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetBookById xmlns=\"http://library.example/soap\">\n      <id>abc</id>\n    </GetBookById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": "Shows the difference between our typed faults and faults produced by the SOAP framework itself: the XML could not be turned into an int, so LibraryService is never called."
+          }
+        },
+        {
+          "name": "ValidationFault - year below 1900",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ValidationFault', () => pm.expect(pm.response.text()).to.include('<ValidationFault '));",
+                  "pm.test(\"Detail contains <Field>publishingYear</Field>\", () => pm.expect(pm.response.text()).to.include(\"<Field>publishingYear</Field>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreateBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreateBook xmlns=\"http://library.example/soap\">\n      <title>Old</title>\n      <authorId>{{authorId}}</authorId>\n      <publishingCompanyId>{{publisherId}}</publishingCompanyId>\n      <publishingYear>1899</publishingYear>\n    </CreateBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ValidationFault - author does not exist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ValidationFault', () => pm.expect(pm.response.text()).to.include('<ValidationFault '));",
+                  "pm.test(\"Detail contains <Field>authorId</Field>\", () => pm.expect(pm.response.text()).to.include(\"<Field>authorId</Field>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreateBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreateBook xmlns=\"http://library.example/soap\">\n      <title>X</title>\n      <authorId>999999</authorId>\n      <publishingCompanyId>{{publisherId}}</publishingCompanyId>\n      <publishingYear>2000</publishingYear>\n    </CreateBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ValidationFault - publisher does not exist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ValidationFault', () => pm.expect(pm.response.text()).to.include('<ValidationFault '));",
+                  "pm.test(\"Detail contains <Field>publishingCompanyId</Field>\", () => pm.expect(pm.response.text()).to.include(\"<Field>publishingCompanyId</Field>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreateBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreateBook xmlns=\"http://library.example/soap\">\n      <title>X</title>\n      <authorId>{{authorId}}</authorId>\n      <publishingCompanyId>999999</publishingCompanyId>\n      <publishingYear>2000</publishingYear>\n    </CreateBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ValidationFault - empty title",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ValidationFault', () => pm.expect(pm.response.text()).to.include('<ValidationFault '));",
+                  "pm.test(\"Detail contains <Field>title</Field>\", () => pm.expect(pm.response.text()).to.include(\"<Field>title</Field>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreateBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreateBook xmlns=\"http://library.example/soap\">\n      <title></title>\n      <authorId>{{authorId}}</authorId>\n      <publishingCompanyId>{{publisherId}}</publishingCompanyId>\n      <publishingYear>2000</publishingYear>\n    </CreateBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ValidationFault - empty author name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ValidationFault', () => pm.expect(pm.response.text()).to.include('<ValidationFault '));",
+                  "pm.test(\"Detail contains <Field>name</Field>\", () => pm.expect(pm.response.text()).to.include(\"<Field>name</Field>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreateAuthor\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreateAuthor xmlns=\"http://library.example/soap\">\n      <name></name>\n      <surname>X</surname>\n    </CreateAuthor>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ValidationFault - empty publisher name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ValidationFault', () => pm.expect(pm.response.text()).to.include('<ValidationFault '));",
+                  "pm.test(\"Detail contains <Field>name</Field>\", () => pm.expect(pm.response.text()).to.include(\"<Field>name</Field>\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/CreatePublishingCompany\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <CreatePublishingCompany xmlns=\"http://library.example/soap\">\n      <name></name>\n    </CreatePublishingCompany>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ConflictFault - DeleteAuthor referenced by book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ConflictFault', () => pm.expect(pm.response.text()).to.include('<ConflictFault '));",
+                  "pm.test(\"Detail contains still reference\", () => pm.expect(pm.response.text()).to.include(\"still reference\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/DeleteAuthor\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <DeleteAuthor xmlns=\"http://library.example/soap\">\n      <id>{{authorId}}</id>\n    </DeleteAuthor>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "ConflictFault - DeletePublishingCompany referenced by book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is ConflictFault', () => pm.expect(pm.response.text()).to.include('<ConflictFault '));",
+                  "pm.test(\"Detail contains still reference\", () => pm.expect(pm.response.text()).to.include(\"still reference\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/DeletePublishingCompany\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <DeletePublishingCompany xmlns=\"http://library.example/soap\">\n      <id>{{publisherId}}</id>\n    </DeletePublishingCompany>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "5 - Cleanup",
+      "item": [
+        {
+          "name": "DeleteBook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has DeleteBookResponse', () => pm.expect(pm.response.text()).to.include('<DeleteBookResponse'));",
+                  "pm.test(\"Body contains true\", () => pm.expect(pm.response.text()).to.include(\"true\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/DeleteBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <DeleteBook xmlns=\"http://library.example/soap\">\n      <id>{{bookId}}</id>\n    </DeleteBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "DeleteBook (already deleted -> NotFoundFault)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is NotFoundFault', () => pm.expect(pm.response.text()).to.include('<NotFoundFault '));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/DeleteBook\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <DeleteBook xmlns=\"http://library.example/soap\">\n      <id>{{bookId}}</id>\n    </DeleteBook>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "DeleteAuthor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has DeleteAuthorResponse', () => pm.expect(pm.response.text()).to.include('<DeleteAuthorResponse'));",
+                  "pm.test(\"Body contains true\", () => pm.expect(pm.response.text()).to.include(\"true\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/DeleteAuthor\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <DeleteAuthor xmlns=\"http://library.example/soap\">\n      <id>{{authorId}}</id>\n    </DeleteAuthor>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "DeletePublishingCompany",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has DeletePublishingCompanyResponse', () => pm.expect(pm.response.text()).to.include('<DeletePublishingCompanyResponse'));",
+                  "pm.test(\"Body contains true\", () => pm.expect(pm.response.text()).to.include(\"true\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/DeletePublishingCompany\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <DeletePublishingCompany xmlns=\"http://library.example/soap\">\n      <id>{{publisherId}}</id>\n    </DeletePublishingCompany>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GetAuthorById (deleted -> NotFoundFault)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 500 (SOAP fault)', () => pm.response.to.have.status(500));",
+                  "pm.test('Is a SOAP Fault', () => pm.expect(pm.response.text()).to.include('<s:Fault>'));",
+                  "pm.test('Fault detail is NotFoundFault', () => pm.expect(pm.response.text()).to.include('<NotFoundFault '));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/xml; charset=utf-8"
+              },
+              {
+                "key": "SOAPAction",
+                "value": "\"http://library.example/soap/LibraryService/GetAuthorById\""
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetAuthorById xmlns=\"http://library.example/soap\">\n      <id>{{authorId}}</id>\n    </GetAuthorById>\n  </soapenv:Body>\n</soapenv:Envelope>"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "authorId",
+      "value": ""
+    },
+    {
+      "key": "publisherId",
+      "value": ""
+    },
+    {
+      "key": "bookId",
+      "value": ""
+    }
+  ]
+}
