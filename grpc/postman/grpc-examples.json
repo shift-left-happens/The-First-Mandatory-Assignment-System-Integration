@@ -1,0 +1,69 @@
+{
+  "server": "localhost:50051",
+  "serviceDefinition": "../library.proto",
+  "service": "library.LibraryService",
+  "examples": [
+    {
+      "name": "GetBookById — existing",
+      "method": "GetBookById",
+      "message": { "id": 1000 },
+      "expected": "Book"
+    },
+    {
+      "name": "GetBookById — missing",
+      "method": "GetBookById",
+      "message": { "id": 99999999 },
+      "expected": "NOT_FOUND"
+    },
+    {
+      "name": "CreateBook — valid",
+      "method": "CreateBook",
+      "message": {
+        "title": "Postman demo book",
+        "author_id": 1,
+        "publishing_company_id": 1,
+        "publishing_year": 2020
+      },
+      "expected": "New book ID; both active WatchBooks streams receive the book"
+    },
+    {
+      "name": "CreateBook — invalid year",
+      "method": "CreateBook",
+      "message": {
+        "title": "Invalid year",
+        "author_id": 1,
+        "publishing_company_id": 1,
+        "publishing_year": 1899
+      },
+      "expected": "INVALID_ARGUMENT"
+    },
+    {
+      "name": "CreateBook — unknown author",
+      "method": "CreateBook",
+      "message": {
+        "title": "Unknown author",
+        "author_id": 99999999,
+        "publishing_company_id": 1,
+        "publishing_year": 2020
+      },
+      "expected": "INVALID_ARGUMENT"
+    },
+    {
+      "name": "CreateBook — unknown publisher",
+      "method": "CreateBook",
+      "message": {
+        "title": "Unknown publisher",
+        "author_id": 1,
+        "publishing_company_id": 99999999,
+        "publishing_year": 2020
+      },
+      "expected": "INVALID_ARGUMENT"
+    },
+    {
+      "name": "WatchBooks — live stream",
+      "method": "WatchBooks",
+      "message": {},
+      "expected": "Stream stays open and receives books created after subscription"
+    }
+  ]
+}

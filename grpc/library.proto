@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package library;
+
+service LibraryService {
+  rpc GetBookById(GetBookByIdRequest) returns (Book);
+  rpc CreateBook(CreateBookRequest) returns (CreateBookResponse);
+  rpc WatchBooks(WatchBooksRequest) returns (stream Book);
+}
+
+message Book {
+  int32 id = 1;
+  string title = 2;
+  int32 author_id = 3;
+  int32 publishing_company_id = 4;
+  int32 publishing_year = 5;
+}
+
+message GetBookByIdRequest { int32 id = 1; }
+
+message CreateBookRequest {
+  string title = 1;
+  int32 author_id = 2;
+  int32 publishing_company_id = 3;
+  int32 publishing_year = 4;
+}
+
+message CreateBookResponse { int32 id = 1; }
+
+message WatchBooksRequest {}
