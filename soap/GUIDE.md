@@ -67,7 +67,7 @@ SOAPAction: "http://library.example/soap/LibraryService/GetBookById"
 What to notice:
 - **`Envelope` / `Body`**: always there. (There is an optional `Header` for things like security tokens; we don't use it.)
 - **`<GetBookById>`**: the element name *is* the operation. This style is called **document/literal wrapped**: the body holds one element named after the operation, and the parameters are its children.
-- **`xmlns="http://library.example/soap"`**: our namespace. If it's missing or misspelled, the server won't recognise the operation. (It's defined once in `Shared/Soap.cs`.)
+- **`xmlns="http://library.example/soap"`**: our namespace. If it's missing or misspelled, the server won't recognise the operation. (It's defined once, at the top of `ILibraryService.cs`.)
 - **The response** uses the naming convention `<Operation>Response` → `<Operation>Result`.
 - **`SOAPAction`**: SOAP 1.1 uses this header to say which operation is called. It's `namespace/ServiceName/Operation`.
 
@@ -85,17 +85,17 @@ We write C# and **CoreWCF generates the WSDL** from it. This is called **code-fi
 | C# (our code) | Becomes in WSDL/XSD | Where |
 |---|---|---|
 | `[ServiceContract]` on `ILibraryService` | `<wsdl:portType name="LibraryService">` | `ILibraryService.cs` |
-| `[OperationContract] Book GetBookById(int id)` | `<wsdl:operation name="GetBookById">` + request/response elements | `Features/Books/ILibraryService.Books.cs` |
-| `[DataContract] class Book` | `<xs:complexType name="Book">` | `Features/Books/Book.cs` |
+| `[OperationContract] Book GetBookById(int id)` | `<wsdl:operation name="GetBookById">` + request/response elements | `ILibraryService.cs` |
+| `[DataContract] class Book` | `<xs:complexType name="Book">` | `Models.cs` |
 | `[DataMember(Order = 1)] int Id` | `<xs:element name="Id" type="xs:int">` (in that order) | same |
-| `[FaultContract(typeof(NotFoundFault))]` | `<wsdl:fault name="NotFoundFaultFault">` on that operation | contract files |
+| `[FaultContract(typeof(NotFoundFault))]` | `<wsdl:fault name="NotFoundFaultFault">` on that operation | `ILibraryService.cs` |
 | `BasicHttpBinding` | `<wsdl:binding>` with `soap:binding` (SOAP 1.1 over HTTP) | `Program.cs` |
 | `"/LibraryService.svc"` | `<soap:address location="http://localhost:5080/LibraryService.svc"/>` | `Program.cs` |
 
 ### Side by side
 
 ```csharp
-// Features/Books/Book.cs
+// Models.cs
 [DataContract(Namespace = Soap.Namespace)]
 public class Book
 {
@@ -123,20 +123,13 @@ public class Book
 > `ValidationFault`. A contract-first WSDL could state them in the contract itself. This is a
 > good trade-off to discuss in the presentation.
 
-### Why `partial`?
+### One contract, one file
 
-We organise the code **by feature**, but SOAP wants **one contract**. C# `partial` lets the
-`ILibraryService` interface (and the `LibraryService` class) be split across files:
-
-```
-ILibraryService.cs                                   [ServiceContract]: the root
-Features/Books/ILibraryService.Books.cs              + CreateBook, GetBookById, ...
-Features/Authors/ILibraryService.Authors.cs          + CreateAuthor, ...
-Features/PublishingCompanies/ILibraryService.PublishingCompanies.cs   + ...
-```
-
-The compiler merges the parts into one interface, so CoreWCF sees one contract with 14 operations
-and produces one WSDL.
+All 14 operations live in `ILibraryService.cs`, grouped Books → Authors → Publishing companies.
+That file *is* the WSDL in C# form: read it top to bottom next to `?singleWsdl` and every
+`[OperationContract]` has a matching `wsdl:operation`. For a service this size, one contract is the
+normal choice. A bigger system would split into several services (`IBookService`, `IAuthorService`, ...),
+each with its own endpoint and WSDL.
 
 ---
 
@@ -177,14 +170,14 @@ CoreWCF  (Program.cs: UseServiceModel / BasicHttpBinding)
   │     (if <authorId>abc</authorId> → fails HERE, see section 5)
   │  4. Creates a LibraryService (via dependency injection)
   ▼
-LibraryService.CreateBook            Features/Books/LibraryService.Books.cs
+LibraryService.CreateBook            LibraryService.cs
   │  ValidateBook(...)
-  │    Validate.Text(title)          Shared/Validate.cs
-  │    Validate.Id(authorId)
+  │    ValidateText(title)
+  │    ValidateId(authorId)
   │    publishingYear < 1900 ?  ──yes──►  throw Fault.Validation("publishingYear", ...)
-  │    _authors.Exists(authorId)     Features/Authors/AuthorRepository.cs  (SQL)
-  │    _publishers.Exists(...)
-  │  _books.Create(...)              Features/Books/BookRepository.cs → INSERT ... last_insert_rowid()
+  │    authors.Exists(authorId)      Repositories.cs  (SQL)
+  │    publishers.Exists(...)
+  │  books.Create(...)               Repositories.cs → INSERT ... last_insert_rowid()
   ▼
 CoreWCF
   │  return value  → <CreateBookResponse><CreateBookResult>2001</CreateBookResult></CreateBookResponse>
@@ -195,10 +188,10 @@ Postman
 
 Here is what each layer is responsible for:
 - **CoreWCF**: everything SOAP-specific (XML, envelopes, WSDL). Our code never touches XML.
-- **`LibraryService.*.cs`**: business rules (validation, existence checks, delete conflicts).
-- **`Shared/Db.cs`**: opens connections to `library.dev.db`, a local copy of the shared database
+- **`LibraryService.cs`**: business rules (validation, existence checks, delete conflicts).
+- **`Db.cs`**: opens connections to `library.dev.db`, a local copy of the shared database
   made on first start, so testing never changes the tracked `database/library.db`.
-- **`*Repository.cs`**: SQL only. The old database has odd column names (`nBookID`, `cTitle`),
+- **`Repositories.cs`**: SQL only. The old database has odd column names (`nBookID`, `cTitle`),
   and the repositories alias them (`nBookID AS Id`) so the rest of the code never sees them.
 
 > **Why do we check references in C#?** The SQLite schema has **no foreign keys**. Nothing in the
@@ -230,7 +223,7 @@ A SOAP fault is SOAP's version of an error response:
 | `ConflictFault` | Deleting an author or publisher that books still reference | `DeleteAuthor`, `DeletePublishingCompany` |
 
 How they're made:
-1. The fault class is a `[DataContract]` (`Shared/Faults.cs`), so it gets an XSD type like Book does.
+1. The fault class is a `[DataContract]` (`Faults.cs`), so it gets an XSD type like Book does.
 2. `[FaultContract(typeof(...))]` on an operation **declares** in the WSDL that it can return that fault.
    Clients generated from the WSDL get a typed exception for it.
 3. `throw Fault.NotFound("Book", id)` creates a `FaultException<NotFoundFault>`, and CoreWCF turns
@@ -287,16 +280,16 @@ WS-* standards (WS-Security, reliable messaging, transactions) or a strict signe
 
 ## 7. Exercises
 
-Each takes 5–15 minutes and touches one feature folder.
+Each takes 5–15 minutes.
 
 1. **Break the envelope.** In Postman, change the namespace in a request to `http://wrong`. What fault
    do you get? Then remove the `SOAPAction` header. Then send `<id>abc</id>`.
 2. **Read the contract.** In `?singleWsdl`, find which faults `DeleteAuthor` can return. Compare
-   with `[FaultContract]` in `Features/Authors/ILibraryService.Authors.cs`.
-3. **Make a field required.** Change `[DataMember(Order = 2)]` on `Book.Title` to
+   with `[FaultContract]` in `ILibraryService.cs`.
+3. **Make a field required.** Change `[DataMember(Order = 2)]` on `Book.Title` (in `Models.cs`) to
    `[DataMember(Order = 2, IsRequired = true)]`. Restart and look at the WSDL: what happened to `minOccurs`?
-4. **Add an operation.** Add `Book[] ListBooks()` to the Books feature (contract file → implementation →
-   repository `SELECT`). Check it appears in the WSDL and call it from Postman.
+4. **Add an operation.** Add `Book[] ListBooks()` (`ILibraryService.cs` → `LibraryService.cs` →
+   a `SELECT` in `BookRepository`). Check it appears in the WSDL and call it from Postman.
 5. **Generate a client.** Run `dotnet tool install -g dotnet-svcutil` and then
    `dotnet-svcutil http://localhost:5080/LibraryService.svc?wsdl` in an empty console project.
    Look at the generated C#. This is the "contract → client" story.
@@ -310,9 +303,9 @@ Each takes 5–15 minutes and touches one feature folder.
 | I want to... | Go to |
 |---|---|
 | Change the URL, port or binding | `Program.cs`, `Properties/launchSettings.json` |
-| Add/change an operation | `Features/<Feature>/ILibraryService.<Feature>.cs` + `LibraryService.<Feature>.cs` |
-| Change a data type | `Features/<Feature>/<Entity>.cs` |
-| Change SQL | `Features/<Feature>/<Entity>Repository.cs` |
-| Change validation rules or faults | `Shared/Validate.cs`, `Shared/Faults.cs` |
+| Add/change an operation | `ILibraryService.cs` + `LibraryService.cs` |
+| Change a data type | `Models.cs` |
+| Change SQL | `Repositories.cs` |
+| Change validation rules or faults | `LibraryService.cs` (bottom), `Faults.cs` |
 | Change the database path | `appsettings.json` (`Database:Source`, `Database:WorkingCopy`) |
 | Reset the data | Stop the service, delete `LibrarySoap/library.dev.db` |

@@ -1,7 +1,7 @@
 using System.Runtime.Serialization;
 using CoreWCF;
 
-namespace LibrarySoap.Shared;
+namespace LibrarySoap;
 
 // Fault "detail" types. Each one becomes an XSD complexType in the WSDL and is sent
 // inside <s:Fault><detail>...</detail></s:Fault> when an operation fails.
