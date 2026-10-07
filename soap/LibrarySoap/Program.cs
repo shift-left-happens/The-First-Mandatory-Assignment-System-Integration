@@ -2,10 +2,6 @@ using CoreWCF;
 using CoreWCF.Configuration;
 using CoreWCF.Description;
 using LibrarySoap;
-using LibrarySoap.Features.Authors;
-using LibrarySoap.Features.Books;
-using LibrarySoap.Features.PublishingCompanies;
-using LibrarySoap.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
