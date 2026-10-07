@@ -1,6 +1,6 @@
 using Microsoft.Data.Sqlite;
 
-namespace LibrarySoap.Shared;
+namespace LibrarySoap;
 
 /// <summary>
 /// Opens connections to a local working copy of the shared SQLite database.

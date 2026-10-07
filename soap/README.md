@@ -431,8 +431,7 @@ stop the service and delete `library.dev.db`. Paths are set in `LibrarySoap/apps
 
 ## Project layout
 
-Organised by feature. All features add to **one** SOAP contract (`partial` interface/class),
-so there is still one endpoint and one WSDL.
+Kept flat on purpose: one contract, one implementation, one endpoint, one WSDL.
 
 ```text
 soap/
@@ -440,13 +439,12 @@ soap/
 ├── LibrarySoap.slnx
 ├── LibrarySoap/
 │   ├── Program.cs                   host setup, endpoint, WSDL publishing
-│   ├── ILibraryService.cs           [ServiceContract], the root of the contract
-│   ├── LibraryService.cs            implementation root (constructor + repositories)
-│   ├── Shared/                      namespace, faults, validation, DB connection
-│   └── Features/
-│       ├── Books/                   Book, contract ops, implementation, repository
-│       ├── Authors/                 Author, ...
-│       └── PublishingCompanies/     PublishingCompany, ...
+│   ├── ILibraryService.cs           [ServiceContract]: all 14 operations (= the WSDL)
+│   ├── LibraryService.cs            implementation: validation and business rules
+│   ├── Models.cs                    [DataContract] Book, Author, PublishingCompany (= XSD types)
+│   ├── Faults.cs                    fault detail types + Fault.NotFound/Validation/Conflict helpers
+│   ├── Repositories.cs              SQL for tbook, tauthor, tpublishingcompany
+│   └── Db.cs                        working copy of the database + connections
 └── postman/                         collection + environment
 ```
 
