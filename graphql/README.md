@@ -1,38 +1,76 @@
 # GraphQL API
 
-The GraphQL API provides a flexible query and mutation interface for the library system.
-
-The API is exposed through a single HTTP endpoint:
+The GraphQL API exposes the library system through a single HTTP endpoint:
 
 ```text
-POST /graphql
+POST http://localhost:4000/graphql
+```
+
+It supports the three data types required by the assignment (`Book`, `Author`,
+`Publisher`), three queries and nine mutations (create / update / delete for
+each type).
+
+---
+
+# Tech stack
+
+| Component | Choice | Why |
+|---|---|---|
+| Runtime | **Node.js 24** | Common, easy to read, ships with a built-in SQLite driver |
+| GraphQL server | **GraphQL Yoga** | Minimal boilerplate, schema defined in plain SDL, GraphiQL IDE built in |
+| Database driver | **`node:sqlite`** | Built into Node, so **no native dependencies** and a simple Docker image |
+| Container | **Docker + Docker Compose** | One command to run, identical on every machine |
+
+---
+
+# Running with Docker (recommended)
+
+From the `graphql/` directory:
+
+```bash
+docker compose up --build
+```
+
+The API is then available at:
+
+```text
+http://localhost:4000/graphql
+```
+
+The `docker-compose.yml` mounts the repository's shared `../database` folder into
+the container, so this API reads and writes the **same** `library.db` as the
+other APIs.
+
+To stop it:
+
+```bash
+docker compose down
 ```
 
 ---
 
-# Endpoint
+# Running locally (without Docker)
 
-```text
-http://localhost:<PORT>/graphql
+Requires **Node.js >= 22.5** (for the built-in `node:sqlite` module).
+
+```bash
+npm install
+npm start
 ```
 
-> Update the port according to the implementation.
+The server starts on port `4000` and uses `../database/library.db` by default.
 
-GraphQL requests are sent using HTTP POST.
+Configuration can be overridden with environment variables:
 
----
-
-# Types
-
-The API defines the following main types:
-
-- `Book`
-- `Author`
-- `Publisher`
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `4000` | Port the HTTP server listens on |
+| `HOST` | `0.0.0.0` | Interface to bind |
+| `DB_PATH` | `../database/library.db` | Path to the SQLite database file |
 
 ---
 
-## Book
+# Schema
 
 ```graphql
 type Book {
@@ -42,28 +80,72 @@ type Book {
   publishingCompanyId: Int!
   publishingYear: Int!
 }
-```
 
----
-
-## Author
-
-```graphql
 type Author {
   id: Int!
   name: String!
   surname: String!
 }
-```
 
----
-
-## Publisher
-
-```graphql
 type Publisher {
   id: Int!
   name: String!
+}
+
+type Query {
+  book(id: Int!): Book
+  authors: [Author!]!
+  publishers: [Publisher!]!
+}
+
+type Mutation {
+  createBook(title: String!, authorId: Int!, publishingCompanyId: Int!, publishingYear: Int!): Book!
+  updateBook(id: Int!, title: String!, authorId: Int!, publishingCompanyId: Int!, publishingYear: Int!): Book!
+  deleteBook(id: Int!): Boolean!
+
+  createAuthor(name: String!, surname: String!): Author!
+  updateAuthor(id: Int!, name: String!, surname: String!): Author!
+  deleteAuthor(id: Int!): Boolean!
+
+  createPublisher(name: String!): Publisher!
+  updatePublisher(id: Int!, name: String!): Publisher!
+  deletePublisher(id: Int!): Boolean!
+}
+```
+
+> The `Book.publishingCompanyId` field name matches the REST/SOAP models and the
+> assignment's `Book` type, so the same field name is used as an argument for
+> `createBook` / `updateBook` as well.
+
+The schema is defined in **`src/schema.js`**. At runtime it can also be retrieved
+through GraphQL **introspection**:
+
+- open `http://localhost:4000/graphql` and use the **Docs** panel in GraphiQL, or
+- send the **Schema Introspection** request from the included Postman collection.
+
+---
+
+# Viewing the schema
+
+The quickest way is the **Schema Introspection** request in the Postman
+collection (folder `Schema`). It returns every type, field and argument, for
+example:
+
+```graphql
+query Introspection {
+  __schema {
+    queryType { name }
+    mutationType { name }
+    types {
+      kind
+      name
+      fields {
+        name
+        args { name }
+        type { kind name ofType { kind name ofType { kind name } } }
+      }
+    }
+  }
 }
 ```
 
@@ -71,11 +153,11 @@ type Publisher {
 
 # Queries
 
-## Get Book by ID
+## Get a book by ID
 
 ```graphql
 query {
-  book(id: 1) {
+  book(id: 1000) {
     id
     title
     authorId
@@ -85,9 +167,7 @@ query {
 }
 ```
 
----
-
-## List Authors
+## List all authors
 
 ```graphql
 query {
@@ -99,9 +179,7 @@ query {
 }
 ```
 
----
-
-## List Publishers
+## List all publishers
 
 ```graphql
 query {
@@ -116,26 +194,23 @@ query {
 
 # Mutations
 
-## Create Book
+## Create a book
 
 ```graphql
 mutation {
   createBook(
     title: "Example Book"
     authorId: 1
-    publisherId: 1
+    publishingCompanyId: 1
     publishingYear: 2024
   ) {
     id
+    title
   }
 }
 ```
 
----
-
-## Update Book
-
-Updates all book fields.
+## Update a book (all fields)
 
 ```graphql
 mutation {
@@ -143,21 +218,17 @@ mutation {
     id: 1
     title: "Updated Book"
     authorId: 1
-    publisherId: 1
+    publishingCompanyId: 1
     publishingYear: 2025
   ) {
     id
     title
-    authorId
-    publishingCompanyId
     publishingYear
   }
 }
 ```
 
----
-
-## Delete Book
+## Delete a book
 
 ```graphql
 mutation {
@@ -165,32 +236,11 @@ mutation {
 }
 ```
 
----
-
-## Create Author
+## Create / update / delete an author
 
 ```graphql
 mutation {
-  createAuthor(
-    name: "John"
-    surname: "Doe"
-  ) {
-    id
-  }
-}
-```
-
----
-
-## Update Author
-
-```graphql
-mutation {
-  updateAuthor(
-    id: 1
-    name: "Jane"
-    surname: "Doe"
-  ) {
+  createAuthor(name: "John", surname: "Doe") {
     id
     name
     surname
@@ -198,9 +248,15 @@ mutation {
 }
 ```
 
----
-
-## Delete Author
+```graphql
+mutation {
+  updateAuthor(id: 1, name: "Jane", surname: "Doe") {
+    id
+    name
+    surname
+  }
+}
+```
 
 ```graphql
 mutation {
@@ -208,39 +264,25 @@ mutation {
 }
 ```
 
----
-
-## Create Publisher
+## Create / update / delete a publisher
 
 ```graphql
 mutation {
-  createPublisher(
-    name: "Example Publishing"
-  ) {
-    id
-  }
-}
-```
-
----
-
-## Update Publisher
-
-```graphql
-mutation {
-  updatePublisher(
-    id: 1
-    name: "Updated Publishing"
-  ) {
+  createPublisher(name: "Example Publishing") {
     id
     name
   }
 }
 ```
 
----
-
-## Delete Publisher
+```graphql
+mutation {
+  updatePublisher(id: 1, name: "Updated Publishing") {
+    id
+    name
+  }
+}
+```
 
 ```graphql
 mutation {
@@ -248,94 +290,140 @@ mutation {
 }
 ```
 
-> The exact mutation names and return types should match the implemented schema.
-
 ---
 
-# Validation
+# Validation and error handling
 
-The API validates:
+Every expected failure is returned as a GraphQL error with a machine-readable
+`extensions.code`:
 
-- Required fields
-- Entity IDs
-- Author references
-- Publisher references
-- Publishing year
+| Code | Meaning | Mirrors |
+|---|---|---|
+| `VALIDATION_ERROR` | Missing/invalid value, non-existing author/publisher, publishing year < 1900 | SOAP `ValidationFault` |
+| `NOT_FOUND` | The requested ID does not exist | SOAP `NotFoundFault` |
+| `CONFLICT` | Deleting an author/publisher that is still referenced by a book | SOAP `ConflictFault` |
 
-Publishing years must be at least:
+Example error response:
 
-```text
-1900
+```json
+{
+  "errors": [
+    {
+      "message": "Field \"publishingYear\" must be an integer greater than or equal to 1900.",
+      "extensions": { "code": "VALIDATION_ERROR" }
+    }
+  ]
+}
 ```
 
----
+The rules enforced by the API are:
 
-# Running the API
-
-> Update the commands according to the implementation.
-
-```bash
-# Install dependencies
-<install-command>
-
-# Start GraphQL API
-<run-command>
-```
-
-The GraphQL endpoint will then be available at:
-
-```text
-http://localhost:<PORT>/graphql
-```
-
-If the implementation provides a GraphQL IDE such as GraphiQL or Apollo Sandbox, it can be accessed through the corresponding development URL.
+- `title` / `name` must be a non-empty string.
+- `publishingYear` must be an integer `>= 1900`.
+- A book must reference an **existing** author and an **existing** publisher.
+- An author or publisher **cannot be deleted** while books reference it.
 
 ---
 
 # Testing
 
-GraphQL requests can be tested using:
+## Automated smoke test
 
-- Postman
-- Insomnia
-- GraphiQL
-- Apollo Sandbox
-- Another GraphQL-compatible client
+A self-contained smoke test starts the server on a temporary **copy** of the
+database (the real `library.db` is never modified), runs every query and
+mutation, and checks the expected results, including the error cases:
 
-The test suite should demonstrate:
-
-- Queries
-- Mutations
-- Successful CRUD operations
-- Invalid references
-- Invalid publishing years
-- Non-existing IDs
-- Delete conflicts
-
----
-
-# Why GraphQL?
-
-GraphQL allows clients to specify exactly which fields they require.
-
-For example:
-
-```graphql
-query {
-  authors {
-    name
-  }
-}
+```bash
+npm run smoke
 ```
 
-The client only requests the `name` field rather than receiving the complete author object.
+Expected output ends with:
 
-This is particularly useful when clients have different data requirements.
+```text
+18 passed, 0 failed
+```
+
+## Manual testing
+
+Open `http://localhost:4000/graphql` in a browser to use the built-in
+**GraphiQL** IDE, or send POST requests from Postman / Insomnia / any GraphQL
+client:
+
+```text
+POST http://localhost:4000/graphql
+Content-Type: application/json
+
+{ "query": "{ authors { id name surname } }" }
+```
 
 ---
 
-## Related Documentation
+# Postman collection
+
+A ready-to-import collection and environment are included in `graphql/postman/`:
+
+```text
+graphql/postman/
+├── Library GraphQL API.postman_collection.json
+└── Library GraphQL Environment.postman_environment.json
+```
+
+Import both into Postman, select the **Library GraphQL Environment**, and run the
+requests. The collection contains:
+
+- **Schema** — Schema Introspection (returns the full schema)
+- **Queries** — Get Book by ID, List Authors, List Publishers
+- **Book Mutations** — Create / Update / Delete
+- **Author Mutations** — Create / Update / Delete
+- **Publisher Mutations** — Create / Update / Delete
+- **Error Handling** — not found, validation, and delete-conflict cases
+
+The create requests save the new ID into the `bookId` / `authorId` /
+`publisherId` environment variables, so the update and delete requests reuse the
+same IDs automatically.
+
+---
+
+# Project structure
+
+```text
+graphql/
+├── src/
+│   ├── index.js        # HTTP server + GraphQL endpoint (/graphql)
+│   ├── schema.js       # GraphQL schema (SDL): types, queries, mutations
+│   ├── resolvers.js    # Business logic + validation
+│   ├── repository.js   # SQLite access (maps DB columns to GraphQL fields)
+│   ├── db.js           # Database connection + schema creation
+│   └── errors.js       # GraphQLError helpers (NOT_FOUND / VALIDATION_ERROR / CONFLICT)
+├── scripts/
+│   └── smoke-test.mjs  # Automated end-to-end smoke test
+├── postman/
+│   ├── Library GraphQL API.postman_collection.json
+│   └── Library GraphQL Environment.postman_environment.json
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+├── package.json
+└── README.md
+```
+
+---
+
+# Notes
+
+- The database is **shared** with the other APIs. It is mounted read/write, so
+  mutations made through GraphQL are visible to the REST, SOAP and gRPC APIs.
+- SQLite column names (`nBookID`, `cTitle`, ...) are mapped to the GraphQL field
+  names (`id`, `title`, ...) in `repository.js`, so the GraphQL layer stays clean.
+- `node:sqlite` is used instead of a third-party driver, so there are no native
+  build steps and the Docker image is small and fast to build.
+
+---
+
+## Related documentation
 
 - [Project README](../README.md)
-- [Database README](../database/README.md)
-- [API Testing](../tests/README.md)
+- [REST API](../rest/README.md)
+- [SOAP API](../soap/README.md)
+- [gRPC API](../grpc/README.md)
+- [API Testing](../postman/README.md)
