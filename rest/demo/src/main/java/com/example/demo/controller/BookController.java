@@ -1,19 +1,15 @@
-
 package com.example.demo.controller;
 
 import com.example.demo.model.Book;
 import com.example.demo.service.BookService;
-
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -21,104 +17,60 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping("/books")
 public class BookController {
-
     private final BookService bookService;
+    private final ResourceLinks links;
 
-    public BookController(BookService bookService) {
+    public BookController(BookService bookService, ResourceLinks links) {
         this.bookService = bookService;
+        this.links = links;
     }
 
     @PostMapping
-    public ResponseEntity<Book> createBook(@RequestBody Book book) {
-        Book createdBook = bookService.createBook(book);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdBook);
+    public ResponseEntity<EntityModel<Book>> createBook(@RequestBody Book book) {
+        EntityModel<Book> created = links.book(bookService.createBook(book));
+        return ResponseEntity.created(created.getRequiredLink("self").toUri()).body(created);
     }
 
     @GetMapping("/{id}")
     public EntityModel<Book> getBookById(@PathVariable Long id) {
-        Book book = bookService.getBookById(id)
-                .orElseThrow(() -> new NoSuchElementException("Book not found"));
-
-        return toBookModel(book);
-    }
-
-    private EntityModel<Book> toBookModel(Book book) {
-        return EntityModel.of(
-                book,
-                linkTo(methodOn(BookController.class)
-                        .getBookById(book.getId())).withSelfRel(),
-
-                linkTo(methodOn(AuthorController.class)
-                        .getAuthorById(book.getAuthorId())).withRel("author"),
-
-                linkTo(methodOn(PublisherController.class)
-                        .getPublisherById(book.getPublishingCompanyId())).withRel("publisher")
-        );
+        return links.book(bookService.getBookById(id)
+                .orElseThrow(() -> new NoSuchElementException("Book not found")));
     }
 
     @GetMapping
     public CollectionModel<EntityModel<Book>> getAllBooks(
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset) {
-
-        List<Book> books;
-
-        if (limit != null || offset != null) {
-            int actualLimit = limit != null ? limit : 10;
-            int actualOffset = offset != null ? offset : 0;
-
-            books = bookService.getBooksWithPagination(actualLimit, actualOffset);
-        } else {
-            books = bookService.getAllBooks();
-        }
-
-        List<EntityModel<Book>> bookModels = books.stream()
-                .map(this::toBookModel)
-                .collect(Collectors.toList());
-
-        CollectionModel<EntityModel<Book>> collection =
-                CollectionModel.of(
-                        bookModels,
-                        linkTo(methodOn(BookController.class)
-                                .getAllBooks(limit, offset)).withSelfRel()
-                );
-
-        if (limit != null || offset != null) {
-            int actualLimit = limit != null ? limit : 10;
-            int actualOffset = offset != null ? offset : 0;
-
-            if (books.size() == actualLimit) {
-                collection.add(
-                        linkTo(methodOn(BookController.class)
-                                .getAllBooks(actualLimit, actualOffset + actualLimit))
-                                .withRel("next")
-                );
+        boolean paged = limit != null || offset != null;
+        int actualLimit = limit != null ? limit : 10;
+        int actualOffset = offset != null ? offset : 0;
+        List<Book> books = paged
+                ? bookService.getBooksWithPagination(actualLimit, actualOffset)
+                : bookService.getAllBooks();
+        CollectionModel<EntityModel<Book>> result = CollectionModel.of(
+                books.stream().map(links::book).toList(),
+                linkTo(methodOn(BookController.class).getAllBooks(limit, offset)).withSelfRel());
+        if (paged) {
+            if ((long) actualOffset + books.size() < bookService.countBooks()) {
+                result.add(linkTo(methodOn(BookController.class)
+                        .getAllBooks(actualLimit, actualOffset + actualLimit)).withRel("next"));
             }
-
             if (actualOffset > 0) {
-                collection.add(
-                        linkTo(methodOn(BookController.class)
-                                .getAllBooks(actualLimit, Math.max(0, actualOffset - actualLimit)))
-                                .withRel("prev")
-                );
+                result.add(linkTo(methodOn(BookController.class)
+                        .getAllBooks(actualLimit, Math.max(0, actualOffset - actualLimit))).withRel("prev"));
             }
         }
-
-        return collection;
+        return result;
     }
 
     @PutMapping("/{id}")
-    public Book updateBook(
-            @PathVariable Long id,
-            @RequestBody Book book) {
-        return bookService.updateBook(id, book);
+    public EntityModel<Book> updateBook(@PathVariable Long id, @RequestBody Book book) {
+        return links.book(bookService.updateBook(id, book));
     }
 
     @PatchMapping("/{id}")
-    public Book patchBook(
-            @PathVariable Long id,
-            @RequestBody Map<String, Object> updates) {
-        return bookService.patchBook(id, updates);
+    public EntityModel<Book> patchBook(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        return links.book(bookService.patchBook(id, updates));
     }
 
     @DeleteMapping("/{id}")

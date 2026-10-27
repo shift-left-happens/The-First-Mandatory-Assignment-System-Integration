@@ -10,6 +10,40 @@ It exposes CRUD operations for:
 
 The API uses the shared library database.
 
+## Navigation and HATEOAS
+
+Start at `GET /api` to discover links to the `books`, `authors`, and
+`publishers` collections. Resources include a `_links` object. A book links
+to itself, its author, its publisher, and the books collection. Authors and
+publishers link to their own books through `/authors/{id}/books` and
+`/publishers/{id}/books`.
+
+All successful `POST`, `GET`, `PUT`, and `PATCH` responses use linked resource
+representations. `POST` returns `201 Created` with a `Location` header pointing
+to the new resource. `DELETE` returns `204 No Content`.
+
+Collections have a `self` link. A paginated books response includes `next`
+only when more books exist, and `prev` when the offset is above zero. For
+example, `GET /books?limit=10&offset=0`.
+
+Example book response (links shortened here):
+
+```json
+{
+  "id": 1,
+  "title": "Example Book",
+  "authorId": 1,
+  "publishingCompanyId": 1,
+  "publishingYear": 2024,
+  "_links": {
+    "self": { "href": "http://localhost:8080/books/1" },
+    "books": { "href": "http://localhost:8080/books" },
+    "author": { "href": "http://localhost:8080/authors/1" },
+    "publisher": { "href": "http://localhost:8080/publishers/1" }
+  }
+}
+```
+
 ---
 
 ## Responsibilities
@@ -37,6 +71,8 @@ The REST API is responsible for:
 | `GET` | `/books` | List books |
 | `PUT` | `/books/{id}` | Update a book |
 | `DELETE` | `/books/{id}` | Delete a book |
+| `GET` | `/authors/{id}/books` | Books by author |
+| `GET` | `/publishers/{id}/books` | Books by publisher |
 
 ### Pagination
 
@@ -161,20 +197,15 @@ For example, creating a book with a non-existing author must fail.
 
 ## Running the API
 
-> Update the commands below according to the project's implementation.
-
 ```bash
-# Install dependencies
-<install-command>
-
-# Start the API
-<run-command>
+cd demo
+./mvnw spring-boot:run
 ```
 
 The API will be available at:
 
 ```text
-http://localhost:<PORT>
+http://localhost:8080/api
 ```
 
 ---

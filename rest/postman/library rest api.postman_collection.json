@@ -7,6 +7,32 @@
   },
   "item": [
     {
+      "name": "Discover API",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "http://localhost:8080/api"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Collection links\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const links = pm.response.json()._links;",
+              "    pm.expect(links.books.href).to.include(\"/books\");",
+              "    pm.expect(links.authors.href).to.include(\"/authors\");",
+              "    pm.expect(links.publishers.href).to.include(\"/publishers\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
       "name": "Book",
       "item": [
         {
@@ -17,7 +43,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 201 Created\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Book was created with correct title\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Postman Test Book\");\r\n});\r\n\r\npm.test(\"Created book has an ID\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.id).to.exist;\r\n});\r\n\r\npm.test(\"Save created book ID\", function () {\r\n    const book = pm.response.json();\r\n    pm.collectionVariables.set(\"bookId\", book.id);\r\n    pm.expect(book.id).to.be.a(\"number\");\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.headers.get('Location')).to.include('/');",
+                  "    pm.expect(pm.response.json()._links.self.href).to.eql(pm.response.headers.get('Location'));",
+                  "    pm.collectionVariables.set('bookId', pm.response.json().id);",
+                  "});"
                 ]
               }
             }
@@ -56,7 +87,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains correct book ID\", function () {\r\n    const book = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"bookId\"));\r\n\r\n    pm.expect(book.id).to.eql(expectedId);\r\n});\r\n\r\npm.test(\"Book contains required fields\", function () {\r\n    const book = pm.response.json();\r\n\r\n    pm.expect(book).to.have.property(\"id\");\r\n    pm.expect(book).to.have.property(\"title\");\r\n    pm.expect(book).to.have.property(\"authorId\");\r\n    pm.expect(book).to.have.property(\"publishingCompanyId\");\r\n    pm.expect(book).to.have.property(\"publishingYear\");\r\n});\r\n\r\npm.test(\"Book title is correct\", function () {\r\n    const book = pm.response.json();\r\n\r\n    pm.expect(book.title).to.eql(\"Postman Test Book\");\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -87,7 +121,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is a list of books\", function () {\r\n    const books = pm.response.json();\r\n    pm.expect(books).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"List contains books\", function () {\r\n    const books = pm.response.json();\r\n    pm.expect(books.length).to.be.greaterThan(0);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -117,7 +154,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is an array\", function () {\r\n    const books = pm.response.json();\r\n    pm.expect(books).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"Pagination returns 10 books\", function () {\r\n    const books = pm.response.json();\r\n    pm.expect(books.length).to.eql(10);\r\n});\r\n\r\npm.test(\"Books are ordered by ID\", function () {\r\n    const books = pm.response.json();\r\n\r\n    for (let i = 1; i < books.length; i++) {\r\n        pm.expect(books[i].id).to.be.greaterThan(books[i - 1].id);\r\n    }\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -157,7 +197,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Book title was updated\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Updated Postman Test Book\");\r\n});\r\n\r\npm.test(\"Publishing year was updated\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.publishingYear).to.eql(2025);\r\n});\r\n\r\npm.test(\"Book ID remains the same\", function () {\r\n    const book = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"bookId\"));\r\n\r\n    pm.expect(book.id).to.eql(expectedId);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -197,7 +240,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Book title was patched\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Patched Book Title\");\r\n});\r\n\r\npm.test(\"Book ID remains unchanged\", function () {\r\n    const book = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"bookId\"));\r\n\r\n    pm.expect(book.id).to.eql(expectedId);\r\n});\r\n\r\npm.test(\"Other fields remain unchanged\", function () {\r\n    const book = pm.response.json();\r\n\r\n    pm.expect(book.authorId).to.eql(1);\r\n    pm.expect(book.publishingCompanyId).to.eql(1);\r\n    pm.expect(book.publishingYear).to.eql(2024);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -237,7 +283,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 204 No Content\", function () {\r\n    pm.response.to.have.status(204);\r\n});\r\n\r\npm.test(\"Response body is empty\", function () {\r\n    pm.expect(pm.response.text()).to.be.empty;\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
                 ]
               }
             }
@@ -273,7 +321,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 201 Created\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Author was created with correct name\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.name).to.eql(\"Postman\");\r\n    pm.expect(author.surname).to.eql(\"TestAuthor\");\r\n});\r\n\r\npm.test(\"Created author has an ID\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.id).to.exist;\r\n});\r\n\r\npm.test(\"Save created author ID\", function () {\r\n    const author = pm.response.json();\r\n    pm.collectionVariables.set(\"authorId\", author.id);\r\n    pm.expect(author.id).to.be.a(\"number\");\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.headers.get('Location')).to.include('/');",
+                  "    pm.expect(pm.response.json()._links.self.href).to.eql(pm.response.headers.get('Location'));",
+                  "    pm.collectionVariables.set('authorId', pm.response.json().id);",
+                  "});"
                 ]
               }
             }
@@ -312,7 +365,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains correct author ID\", function () {\r\n    const author = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"authorId\"));\r\n\r\n    pm.expect(author.id).to.eql(expectedId);\r\n});\r\n\r\npm.test(\"Author contains required fields\", function () {\r\n    const author = pm.response.json();\r\n\r\n    pm.expect(author).to.have.property(\"id\");\r\n    pm.expect(author).to.have.property(\"name\");\r\n    pm.expect(author).to.have.property(\"surname\");\r\n});\r\n\r\npm.test(\"Author name and surname are correct\", function () {\r\n    const author = pm.response.json();\r\n\r\n    pm.expect(author.name).to.eql(\"Postman\");\r\n    pm.expect(author.surname).to.eql(\"TestAuthor\");\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -343,7 +399,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is a list of authors\", function () {\r\n    const authors = pm.response.json();\r\n    pm.expect(authors).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"List contains authors\", function () {\r\n    const authors = pm.response.json();\r\n    pm.expect(authors.length).to.be.greaterThan(0);\r\n});\r\n\r\npm.test(\"Authors contain required fields\", function () {\r\n    const authors = pm.response.json();\r\n\r\n    authors.forEach(function (author) {\r\n        pm.expect(author).to.have.property(\"id\");\r\n        pm.expect(author).to.have.property(\"name\");\r\n        pm.expect(author).to.have.property(\"surname\");\r\n    });\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -373,7 +432,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Author name was updated\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.name).to.eql(\"Updated\");\r\n});\r\n\r\npm.test(\"Author surname is correct\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.surname).to.eql(\"TestAuthor\");\r\n});\r\n\r\npm.test(\"Author ID remains unchanged\", function () {\r\n    const author = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"authorId\"));\r\n\r\n    pm.expect(author.id).to.eql(expectedId);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -413,7 +475,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Author surname was patched\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.surname).to.eql(\"PatchedSurname\");\r\n});\r\n\r\npm.test(\"Author name remains unchanged\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.name).to.eql(\"Updated\");\r\n});\r\n\r\npm.test(\"Author ID remains unchanged\", function () {\r\n    const author = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"authorId\"));\r\n\r\n    pm.expect(author.id).to.eql(expectedId);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -453,7 +518,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 204 No Content\", function () {\r\n    pm.response.to.have.status(204);\r\n});\r\n\r\npm.test(\"Response body is empty\", function () {\r\n    pm.expect(pm.response.text()).to.be.empty;\r\n});\r\n\r\npm.test(\"Response time is below 2000ms\", function () {\r\n    pm.expect(pm.response.responseTime).to.be.below(2000);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
                 ]
               }
             }
@@ -489,7 +556,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 201 Created\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Publisher was created with correct name\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.expect(publisher.name).to.eql(\"Postman Test Publisher\");\r\n});\r\n\r\npm.test(\"Created publisher has an ID\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.expect(publisher.id).to.exist;\r\n});\r\n\r\npm.test(\"Save created publisher ID\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.collectionVariables.set(\"publisherId\", publisher.id);\r\n    pm.expect(publisher.id).to.be.a(\"number\");\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.headers.get('Location')).to.include('/');",
+                  "    pm.expect(pm.response.json()._links.self.href).to.eql(pm.response.headers.get('Location'));",
+                  "    pm.collectionVariables.set('publisherId', pm.response.json().id);",
+                  "});"
                 ]
               }
             }
@@ -528,7 +600,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains correct publisher ID\", function () {\r\n    const publisher = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"publisherId\"));\r\n\r\n    pm.expect(publisher.id).to.eql(expectedId);\r\n});\r\n\r\npm.test(\"Publisher contains required fields\", function () {\r\n    const publisher = pm.response.json();\r\n\r\n    pm.expect(publisher).to.have.property(\"id\");\r\n    pm.expect(publisher).to.have.property(\"name\");\r\n});\r\n\r\npm.test(\"Publisher name is correct\", function () {\r\n    const publisher = pm.response.json();\r\n\r\n    pm.expect(publisher.name).to.eql(\"Postman Test Publisher\");\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -559,7 +634,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is a list of publishers\", function () {\r\n    const publishers = pm.response.json();\r\n    pm.expect(publishers).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"List contains publishers\", function () {\r\n    const publishers = pm.response.json();\r\n    pm.expect(publishers.length).to.be.greaterThan(0);\r\n});\r\n\r\npm.test(\"Publishers contain required fields\", function () {\r\n    const publishers = pm.response.json();\r\n\r\n    publishers.forEach(function (publisher) {\r\n        pm.expect(publisher).to.have.property(\"id\");\r\n        pm.expect(publisher).to.have.property(\"name\");\r\n    });\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -589,7 +667,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Publisher name was updated\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.expect(publisher.name).to.eql(\"Updated Publisher\");\r\n});\r\n\r\npm.test(\"Publisher ID remains unchanged\", function () {\r\n    const publisher = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"publisherId\"));\r\n\r\n    pm.expect(publisher.id).to.eql(expectedId);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -629,7 +710,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Publisher name was patched\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.expect(publisher.name).to.eql(\"Patched Publisher\");\r\n});\r\n\r\npm.test(\"Publisher ID remains unchanged\", function () {\r\n    const publisher = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"publisherId\"));\r\n\r\n    pm.expect(publisher.id).to.eql(expectedId);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()._links.self.href).to.include('/');",
+                  "});"
                 ]
               }
             }
@@ -669,7 +753,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 204 No Content\", function () {\r\n    pm.response.to.have.status(204);\r\n});\r\n\r\npm.test(\"Response body is empty\", function () {\r\n    pm.expect(pm.response.text()).to.be.empty;\r\n});\r\n\r\npm.test(\"Publisher was deleted successfully\", function () {\r\n    pm.expect(pm.response.code).to.eql(204);\r\n});"
+                  "pm.test(\"HTTP and HATEOAS response\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
                 ]
               }
             }

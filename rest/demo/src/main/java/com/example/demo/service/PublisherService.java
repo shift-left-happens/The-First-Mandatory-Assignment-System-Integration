@@ -23,6 +23,7 @@ public class PublisherService {
     }
 
     public Publisher createPublisher(Publisher publisher) {
+        validatePublisher(publisher);
         return publisherRepository.save(publisher);
     }
 
@@ -37,22 +38,26 @@ public class PublisherService {
     public Publisher updatePublisher(Long id, Publisher updatedPublisher) {
 
         Publisher publisher = publisherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Publisher not found"));
+                .orElseThrow(() -> new NoSuchElementException("Publisher not found"));
+
+        validatePublisher(updatedPublisher);
 
         publisher.setName(updatedPublisher.getName());
 
+        validatePublisher(publisher);
         return publisherRepository.save(publisher);
     }
 
     public Publisher patchPublisher(Long id, Map<String, Object> updates) {
 
         Publisher publisher = publisherRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Publisher not found"));
+                .orElseThrow(() -> new NoSuchElementException("Publisher not found"));
 
         if (updates.containsKey("name")) {
             publisher.setName((String) updates.get("name"));
         }
 
+        validatePublisher(publisher);
         return publisherRepository.save(publisher);
     }
 
@@ -68,5 +73,11 @@ public class PublisherService {
         }
 
         publisherRepository.deleteById(id);
+    }
+
+    private void validatePublisher(Publisher publisher) {
+        if (publisher == null || publisher.getName() == null || publisher.getName().isBlank()) {
+            throw new IllegalArgumentException("Publisher name is required");
+        }
     }
 }

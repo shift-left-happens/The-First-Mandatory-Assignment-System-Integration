@@ -23,6 +23,7 @@ public class AuthorService {
     }
 
     public Author createAuthor(Author author) {
+        validateAuthor(author);
         return authorRepository.save(author);
     }
 
@@ -37,18 +38,21 @@ public class AuthorService {
     public Author updateAuthor(Long id, Author updatedAuthor) {
 
         Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Author not found"));
+                .orElseThrow(() -> new NoSuchElementException("Author not found"));
+
+        validateAuthor(updatedAuthor);
 
         author.setName(updatedAuthor.getName());
         author.setSurname(updatedAuthor.getSurname());
 
+        validateAuthor(author);
         return authorRepository.save(author);
     }
 
     public Author patchAuthor(Long id, Map<String, Object> updates) {
 
         Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Author not found"));
+                .orElseThrow(() -> new NoSuchElementException("Author not found"));
 
         if (updates.containsKey("name")) {
             author.setName((String) updates.get("name"));
@@ -58,6 +62,7 @@ public class AuthorService {
             author.setSurname((String) updates.get("surname"));
         }
 
+        validateAuthor(author);
         return authorRepository.save(author);
     }
 
@@ -73,5 +78,12 @@ public class AuthorService {
         }
 
         authorRepository.deleteById(id);
+    }
+
+    private void validateAuthor(Author author) {
+        if (author == null || author.getName() == null || author.getName().isBlank()
+                || author.getSurname() == null || author.getSurname().isBlank()) {
+            throw new IllegalArgumentException("Author name and surname are required");
+        }
     }
 }
