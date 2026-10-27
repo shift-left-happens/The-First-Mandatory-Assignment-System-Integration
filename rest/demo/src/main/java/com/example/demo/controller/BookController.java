@@ -2,13 +2,15 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Book;
 import com.example.demo.service.BookService;
+import com.example.demo.request.BookRequest;
+import com.example.demo.request.BookPatchRequest;
+import tools.jackson.databind.JsonNode;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -26,8 +28,8 @@ public class BookController {
     }
 
     @PostMapping
-    public ResponseEntity<EntityModel<Book>> createBook(@RequestBody Book book) {
-        EntityModel<Book> created = links.book(bookService.createBook(book));
+    public ResponseEntity<EntityModel<Book>> createBook(@RequestBody JsonNode body) {
+        EntityModel<Book> created = links.book(bookService.createBook(BookRequest.from(body).toEntity()));
         return ResponseEntity.created(created.getRequiredLink("self").toUri()).body(created);
     }
 
@@ -64,13 +66,13 @@ public class BookController {
     }
 
     @PutMapping("/{id}")
-    public EntityModel<Book> updateBook(@PathVariable Long id, @RequestBody Book book) {
-        return links.book(bookService.updateBook(id, book));
+    public EntityModel<Book> updateBook(@PathVariable Long id, @RequestBody JsonNode body) {
+        return links.book(bookService.updateBook(id, BookRequest.from(body).toEntity()));
     }
 
     @PatchMapping("/{id}")
-    public EntityModel<Book> patchBook(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
-        return links.book(bookService.patchBook(id, updates));
+    public EntityModel<Book> patchBook(@PathVariable Long id, @RequestBody JsonNode body) {
+        return links.book(bookService.patchBook(id, BookPatchRequest.from(body)));
     }
 
     @DeleteMapping("/{id}")

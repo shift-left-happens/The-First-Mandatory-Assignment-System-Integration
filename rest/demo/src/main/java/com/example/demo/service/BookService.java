@@ -1,13 +1,13 @@
 package com.example.demo.service;
 
 import com.example.demo.model.Book;
+import com.example.demo.request.BookPatchRequest;
 import com.example.demo.repository.AuthorRepository;
 import com.example.demo.repository.BookRepository;
 import com.example.demo.repository.PublisherRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.NoSuchElementException;
 
@@ -89,33 +89,27 @@ public class BookService {
         return bookRepository.save(book);
     }
 
-    public Book patchBook(Long id, Map<String, Object> updates) {
+    public Book patchBook(Long id, BookPatchRequest updates) {
 
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Book not found"));
 
-        if (updates.containsKey("title")) {
-            book.setTitle((String) updates.get("title"));
+        Book candidate = new Book(book.getTitle(), book.getAuthorId(),
+                book.getPublishingCompanyId(), book.getPublishingYear());
+        if (updates.body().has("title")) candidate.setTitle(updates.body().get("title").textValue());
+        if (updates.body().has("authorId")) candidate.setAuthorId(updates.body().get("authorId").longValue());
+        if (updates.body().has("publishingCompanyId")) {
+            candidate.setPublishingCompanyId(updates.body().get("publishingCompanyId").longValue());
+        }
+        if (updates.body().has("publishingYear")) {
+            candidate.setPublishingYear(updates.body().get("publishingYear").intValue());
         }
 
-        if (updates.containsKey("authorId")) {
-            book.setAuthorId(updates.get("authorId") == null ? null
-                    : ((Number) updates.get("authorId")).longValue());
-        }
-
-        if (updates.containsKey("publishingCompanyId")) {
-            book.setPublishingCompanyId(
-                    updates.get("publishingCompanyId") == null ? null
-                            : ((Number) updates.get("publishingCompanyId")).longValue());
-        }
-
-        if (updates.containsKey("publishingYear")) {
-            book.setPublishingYear(
-                    updates.get("publishingYear") == null ? null
-                            : ((Number) updates.get("publishingYear")).intValue());
-        }
-
-        validateBook(book);
+        validateBook(candidate);
+        book.setTitle(candidate.getTitle());
+        book.setAuthorId(candidate.getAuthorId());
+        book.setPublishingCompanyId(candidate.getPublishingCompanyId());
+        book.setPublishingYear(candidate.getPublishingYear());
 
         return bookRepository.save(book);
     }

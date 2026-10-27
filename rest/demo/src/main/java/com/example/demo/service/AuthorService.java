@@ -2,12 +2,12 @@
 package com.example.demo.service;
 
 import com.example.demo.model.Author;
+import com.example.demo.request.AuthorPatchRequest;
 import com.example.demo.repository.AuthorRepository;
 import com.example.demo.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.NoSuchElementException;
 
@@ -45,24 +45,20 @@ public class AuthorService {
         author.setName(updatedAuthor.getName());
         author.setSurname(updatedAuthor.getSurname());
 
-        validateAuthor(author);
         return authorRepository.save(author);
     }
 
-    public Author patchAuthor(Long id, Map<String, Object> updates) {
+    public Author patchAuthor(Long id, AuthorPatchRequest updates) {
 
         Author author = authorRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Author not found"));
 
-        if (updates.containsKey("name")) {
-            author.setName((String) updates.get("name"));
-        }
-
-        if (updates.containsKey("surname")) {
-            author.setSurname((String) updates.get("surname"));
-        }
-
-        validateAuthor(author);
+        Author candidate = new Author(author.getName(), author.getSurname());
+        if (updates.body().has("name")) candidate.setName(updates.body().get("name").textValue());
+        if (updates.body().has("surname")) candidate.setSurname(updates.body().get("surname").textValue());
+        validateAuthor(candidate);
+        author.setName(candidate.getName());
+        author.setSurname(candidate.getSurname());
         return authorRepository.save(author);
     }
 

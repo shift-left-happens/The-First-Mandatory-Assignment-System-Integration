@@ -3,6 +3,7 @@ package com.example.demo;
 import com.example.demo.repository.BookRepository;
 import com.example.demo.repository.AuthorRepository;
 import com.example.demo.repository.PublisherRepository;
+import com.example.demo.model.Author;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,6 +15,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -87,5 +89,31 @@ class ApiNavigationTests {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", containsString("/publishers/")))
                 .andExpect(jsonPath("$._links.self.href", containsString("/publishers/")));
+    }
+
+    @Test
+    void fullReplacementRejectsMissingFieldsAndClientIds() throws Exception {
+        MockMvc mvc = webAppContextSetup(context).build();
+        mvc.perform(put("/books/1").contentType("application/json")
+                        .content("{\"title\":\"Incomplete\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/publishers").contentType("application/json")
+                        .content("{\"id\":123,\"name\":\"Client ID\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @Transactional
+    void patchRejectsUnknownFieldsAndPreservesOmittedFields() throws Exception {
+        MockMvc mvc = webAppContextSetup(context).build();
+        var author = authors.save(new Author("Before Patch", "Preserved Surname"));
+        mvc.perform(patch("/authors/{id}", author.getId()).contentType("application/json")
+                        .content("{\"naem\":\"Typo\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(patch("/authors/{id}", author.getId()).contentType("application/json")
+                        .content("{\"name\":\"Patched Name\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Patched Name"))
+                .andExpect(jsonPath("$.surname").value(author.getSurname()));
     }
 }

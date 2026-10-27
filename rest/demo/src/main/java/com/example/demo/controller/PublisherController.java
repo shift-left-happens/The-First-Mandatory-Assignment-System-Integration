@@ -3,6 +3,9 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Publisher;
 import com.example.demo.service.PublisherService;
+import com.example.demo.request.PublisherRequest;
+import com.example.demo.request.PublisherPatchRequest;
+import tools.jackson.databind.JsonNode;
 import com.example.demo.service.BookService;
 import com.example.demo.model.Book;
 import org.springframework.hateoas.CollectionModel;
@@ -12,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -32,8 +34,8 @@ public class PublisherController {
     }
 
     @PostMapping
-    public ResponseEntity<EntityModel<Publisher>> createPublisher(@RequestBody Publisher publisher) {
-        EntityModel<Publisher> created = links.publisher(publisherService.createPublisher(publisher));
+    public ResponseEntity<EntityModel<Publisher>> createPublisher(@RequestBody JsonNode body) {
+        EntityModel<Publisher> created = links.publisher(publisherService.createPublisher(PublisherRequest.from(body).toEntity()));
         return ResponseEntity.created(created.getRequiredLink("self").toUri()).body(created);
     }
 
@@ -59,15 +61,15 @@ public class PublisherController {
     @PutMapping("/{id}")
     public EntityModel<Publisher> updatePublisher(
             @PathVariable Long id,
-            @RequestBody Publisher publisher) {
-        return links.publisher(publisherService.updatePublisher(id, publisher));
+            @RequestBody JsonNode body) {
+        return links.publisher(publisherService.updatePublisher(id, PublisherRequest.from(body).toEntity()));
     }
 
     @PatchMapping("/{id}")
     public EntityModel<Publisher> patchPublisher(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> updates) {
-        return links.publisher(publisherService.patchPublisher(id, updates));
+            @RequestBody JsonNode body) {
+        return links.publisher(publisherService.patchPublisher(id, PublisherPatchRequest.from(body)));
     }
 
     @DeleteMapping("/{id}")

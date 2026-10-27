@@ -22,6 +22,22 @@ All successful `POST`, `GET`, `PUT`, and `PATCH` responses use linked resource
 representations. `POST` returns `201 Created` with a `Location` header pointing
 to the new resource. `DELETE` returns `204 No Content`.
 
+`POST` and `PUT` take a complete resource body without `id`. `POST` creates a
+server-assigned ID; `PUT /books/{id}` (and the matching author/publisher routes)
+replaces every editable field of an existing resource. Missing, null, unknown,
+or incorrectly typed fields return `400 Bad Request`. The URL supplies the ID.
+
+`PATCH` takes a JSON object containing only the fields to change. Omitted
+fields retain their values. An empty object, unknown field, null value, or
+invalid type returns `400 Bad Request`. For example:
+
+```http
+PATCH /books/42
+Content-Type: application/json
+
+{"title":"Corrected title"}
+```
+
 Collections have a `self` link. A paginated books response includes `next`
 only when more books exist, and `prev` when the offset is above zero. For
 example, `GET /books?limit=10&offset=0`.

@@ -3,6 +3,9 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Author;
 import com.example.demo.service.AuthorService;
+import com.example.demo.request.AuthorRequest;
+import com.example.demo.request.AuthorPatchRequest;
+import tools.jackson.databind.JsonNode;
 import com.example.demo.service.BookService;
 import com.example.demo.model.Book;
 import org.springframework.hateoas.CollectionModel;
@@ -12,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -32,8 +34,8 @@ public class AuthorController {
     }
 
     @PostMapping
-    public ResponseEntity<EntityModel<Author>> createAuthor(@RequestBody Author author) {
-        EntityModel<Author> created = links.author(authorService.createAuthor(author));
+    public ResponseEntity<EntityModel<Author>> createAuthor(@RequestBody JsonNode body) {
+        EntityModel<Author> created = links.author(authorService.createAuthor(AuthorRequest.from(body).toEntity()));
         return ResponseEntity.created(created.getRequiredLink("self").toUri()).body(created);
     }
 
@@ -59,15 +61,15 @@ public class AuthorController {
     @PutMapping("/{id}")
     public EntityModel<Author> updateAuthor(
             @PathVariable Long id,
-            @RequestBody Author author) {
-        return links.author(authorService.updateAuthor(id, author));
+            @RequestBody JsonNode body) {
+        return links.author(authorService.updateAuthor(id, AuthorRequest.from(body).toEntity()));
     }
 
     @PatchMapping("/{id}")
     public EntityModel<Author> patchAuthor(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> updates) {
-        return links.author(authorService.patchAuthor(id, updates));
+            @RequestBody JsonNode body) {
+        return links.author(authorService.patchAuthor(id, AuthorPatchRequest.from(body)));
     }
 
     @DeleteMapping("/{id}")

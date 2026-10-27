@@ -2,12 +2,12 @@
 package com.example.demo.service;
 
 import com.example.demo.model.Publisher;
+import com.example.demo.request.PublisherPatchRequest;
 import com.example.demo.repository.PublisherRepository;
 import com.example.demo.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.NoSuchElementException;
 
@@ -48,16 +48,15 @@ public class PublisherService {
         return publisherRepository.save(publisher);
     }
 
-    public Publisher patchPublisher(Long id, Map<String, Object> updates) {
+    public Publisher patchPublisher(Long id, PublisherPatchRequest updates) {
 
         Publisher publisher = publisherRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Publisher not found"));
 
-        if (updates.containsKey("name")) {
-            publisher.setName((String) updates.get("name"));
-        }
-
-        validatePublisher(publisher);
+        Publisher candidate = new Publisher(publisher.getName());
+        if (updates.body().has("name")) candidate.setName(updates.body().get("name").textValue());
+        validatePublisher(candidate);
+        publisher.setName(candidate.getName());
         return publisherRepository.save(publisher);
     }
 
