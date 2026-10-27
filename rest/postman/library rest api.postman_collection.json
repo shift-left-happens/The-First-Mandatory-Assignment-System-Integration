@@ -1,0 +1,857 @@
+{
+  "info": {
+    "_postman_id": "fddfa750-30a6-4b55-9ac0-cd0a6cc33342",
+    "name": "library rest api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "53604151"
+  },
+  "item": [
+    {
+      "name": "Book",
+      "item": [
+        {
+          "name": "Create Books",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Book was created with correct title\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Postman Test Book\");\r\n});\r\n\r\npm.test(\"Created book has an ID\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.id).to.exist;\r\n});\r\n\r\npm.test(\"Save created book ID\", function () {\r\n    const book = pm.response.json();\r\n    pm.collectionVariables.set(\"bookId\", book.id);\r\n    pm.expect(book.id).to.be.a(\"number\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Postman Test Book\",\r\n  \"authorId\": 1,\r\n  \"publishingCompanyId\": 1,\r\n  \"publishingYear\": 2024\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/books",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Book by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains correct book ID\", function () {\r\n    const book = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"bookId\"));\r\n\r\n    pm.expect(book.id).to.eql(expectedId);\r\n});\r\n\r\npm.test(\"Book contains required fields\", function () {\r\n    const book = pm.response.json();\r\n\r\n    pm.expect(book).to.have.property(\"id\");\r\n    pm.expect(book).to.have.property(\"title\");\r\n    pm.expect(book).to.have.property(\"authorId\");\r\n    pm.expect(book).to.have.property(\"publishingCompanyId\");\r\n    pm.expect(book).to.have.property(\"publishingYear\");\r\n});\r\n\r\npm.test(\"Book title is correct\", function () {\r\n    const book = pm.response.json();\r\n\r\n    pm.expect(book.title).to.eql(\"Postman Test Book\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/books/{{bookId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books",
+                "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Books",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is a list of books\", function () {\r\n    const books = pm.response.json();\r\n    pm.expect(books).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"List contains books\", function () {\r\n    const books = pm.response.json();\r\n    pm.expect(books.length).to.be.greaterThan(0);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/books",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is an array\", function () {\r\n    const books = pm.response.json();\r\n    pm.expect(books).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"Pagination returns 10 books\", function () {\r\n    const books = pm.response.json();\r\n    pm.expect(books.length).to.eql(10);\r\n});\r\n\r\npm.test(\"Books are ordered by ID\", function () {\r\n    const books = pm.response.json();\r\n\r\n    for (let i = 1; i < books.length; i++) {\r\n        pm.expect(books[i].id).to.be.greaterThan(books[i - 1].id);\r\n    }\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/books?limit=10&offset=0",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Book title was updated\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Updated Postman Test Book\");\r\n});\r\n\r\npm.test(\"Publishing year was updated\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.publishingYear).to.eql(2025);\r\n});\r\n\r\npm.test(\"Book ID remains the same\", function () {\r\n    const book = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"bookId\"));\r\n\r\n    pm.expect(book.id).to.eql(expectedId);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Updated Postman Test Book\",\r\n  \"authorId\": 1,\r\n  \"publishingCompanyId\": 1,\r\n  \"publishingYear\": 2025\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/books/{{bookId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books",
+                "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Partial Update Book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Book title was patched\", function () {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Patched Book Title\");\r\n});\r\n\r\npm.test(\"Book ID remains unchanged\", function () {\r\n    const book = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"bookId\"));\r\n\r\n    pm.expect(book.id).to.eql(expectedId);\r\n});\r\n\r\npm.test(\"Other fields remain unchanged\", function () {\r\n    const book = pm.response.json();\r\n\r\n    pm.expect(book.authorId).to.eql(1);\r\n    pm.expect(book.publishingCompanyId).to.eql(1);\r\n    pm.expect(book.publishingYear).to.eql(2024);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Patched Book Title\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/books/{{bookId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books",
+                "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Book",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {\r\n    pm.response.to.have.status(204);\r\n});\r\n\r\npm.test(\"Response body is empty\", function () {\r\n    pm.expect(pm.response.text()).to.be.empty;\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/books/{{bookId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books",
+                "{{bookId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Author",
+      "item": [
+        {
+          "name": "Create Author",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Author was created with correct name\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.name).to.eql(\"Postman\");\r\n    pm.expect(author.surname).to.eql(\"TestAuthor\");\r\n});\r\n\r\npm.test(\"Created author has an ID\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.id).to.exist;\r\n});\r\n\r\npm.test(\"Save created author ID\", function () {\r\n    const author = pm.response.json();\r\n    pm.collectionVariables.set(\"authorId\", author.id);\r\n    pm.expect(author.id).to.be.a(\"number\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Postman\",\r\n  \"surname\": \"TestAuthor\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/authors",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "authors"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Author by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains correct author ID\", function () {\r\n    const author = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"authorId\"));\r\n\r\n    pm.expect(author.id).to.eql(expectedId);\r\n});\r\n\r\npm.test(\"Author contains required fields\", function () {\r\n    const author = pm.response.json();\r\n\r\n    pm.expect(author).to.have.property(\"id\");\r\n    pm.expect(author).to.have.property(\"name\");\r\n    pm.expect(author).to.have.property(\"surname\");\r\n});\r\n\r\npm.test(\"Author name and surname are correct\", function () {\r\n    const author = pm.response.json();\r\n\r\n    pm.expect(author.name).to.eql(\"Postman\");\r\n    pm.expect(author.surname).to.eql(\"TestAuthor\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/authors/{{authorId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "authors",
+                "{{authorId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Authors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is a list of authors\", function () {\r\n    const authors = pm.response.json();\r\n    pm.expect(authors).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"List contains authors\", function () {\r\n    const authors = pm.response.json();\r\n    pm.expect(authors.length).to.be.greaterThan(0);\r\n});\r\n\r\npm.test(\"Authors contain required fields\", function () {\r\n    const authors = pm.response.json();\r\n\r\n    authors.forEach(function (author) {\r\n        pm.expect(author).to.have.property(\"id\");\r\n        pm.expect(author).to.have.property(\"name\");\r\n        pm.expect(author).to.have.property(\"surname\");\r\n    });\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/authors",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "authors"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Author",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Author name was updated\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.name).to.eql(\"Updated\");\r\n});\r\n\r\npm.test(\"Author surname is correct\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.surname).to.eql(\"TestAuthor\");\r\n});\r\n\r\npm.test(\"Author ID remains unchanged\", function () {\r\n    const author = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"authorId\"));\r\n\r\n    pm.expect(author.id).to.eql(expectedId);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Updated\",\r\n  \"surname\": \"TestAuthor\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/authors/{{authorId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "authors",
+                "{{authorId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Partial Update Author",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Author surname was patched\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.surname).to.eql(\"PatchedSurname\");\r\n});\r\n\r\npm.test(\"Author name remains unchanged\", function () {\r\n    const author = pm.response.json();\r\n    pm.expect(author.name).to.eql(\"Updated\");\r\n});\r\n\r\npm.test(\"Author ID remains unchanged\", function () {\r\n    const author = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"authorId\"));\r\n\r\n    pm.expect(author.id).to.eql(expectedId);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"surname\": \"PatchedSurname\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/authors/{{authorId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "authors",
+                "{{authorId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Author",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {\r\n    pm.response.to.have.status(204);\r\n});\r\n\r\npm.test(\"Response body is empty\", function () {\r\n    pm.expect(pm.response.text()).to.be.empty;\r\n});\r\n\r\npm.test(\"Response time is below 2000ms\", function () {\r\n    pm.expect(pm.response.responseTime).to.be.below(2000);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/authors/{{authorId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "authors",
+                "{{authorId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Publisher",
+      "item": [
+        {
+          "name": "Create Publisher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Publisher was created with correct name\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.expect(publisher.name).to.eql(\"Postman Test Publisher\");\r\n});\r\n\r\npm.test(\"Created publisher has an ID\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.expect(publisher.id).to.exist;\r\n});\r\n\r\npm.test(\"Save created publisher ID\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.collectionVariables.set(\"publisherId\", publisher.id);\r\n    pm.expect(publisher.id).to.be.a(\"number\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Postman Test Publisher\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/publishers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "publishers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Publisher by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response contains correct publisher ID\", function () {\r\n    const publisher = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"publisherId\"));\r\n\r\n    pm.expect(publisher.id).to.eql(expectedId);\r\n});\r\n\r\npm.test(\"Publisher contains required fields\", function () {\r\n    const publisher = pm.response.json();\r\n\r\n    pm.expect(publisher).to.have.property(\"id\");\r\n    pm.expect(publisher).to.have.property(\"name\");\r\n});\r\n\r\npm.test(\"Publisher name is correct\", function () {\r\n    const publisher = pm.response.json();\r\n\r\n    pm.expect(publisher.name).to.eql(\"Postman Test Publisher\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/publishers/{{publisherId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "publishers",
+                "{{publisherId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Publishers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Response is a list of publishers\", function () {\r\n    const publishers = pm.response.json();\r\n    pm.expect(publishers).to.be.an(\"array\");\r\n});\r\n\r\npm.test(\"List contains publishers\", function () {\r\n    const publishers = pm.response.json();\r\n    pm.expect(publishers.length).to.be.greaterThan(0);\r\n});\r\n\r\npm.test(\"Publishers contain required fields\", function () {\r\n    const publishers = pm.response.json();\r\n\r\n    publishers.forEach(function (publisher) {\r\n        pm.expect(publisher).to.have.property(\"id\");\r\n        pm.expect(publisher).to.have.property(\"name\");\r\n    });\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/publishers",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "publishers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Publisher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Publisher name was updated\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.expect(publisher.name).to.eql(\"Updated Publisher\");\r\n});\r\n\r\npm.test(\"Publisher ID remains unchanged\", function () {\r\n    const publisher = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"publisherId\"));\r\n\r\n    pm.expect(publisher.id).to.eql(expectedId);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Updated Publisher\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/publishers/{{publisherId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "publishers",
+                "{{publisherId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Partial Update Publisher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Publisher name was patched\", function () {\r\n    const publisher = pm.response.json();\r\n    pm.expect(publisher.name).to.eql(\"Patched Publisher\");\r\n});\r\n\r\npm.test(\"Publisher ID remains unchanged\", function () {\r\n    const publisher = pm.response.json();\r\n    const expectedId = Number(pm.collectionVariables.get(\"publisherId\"));\r\n\r\n    pm.expect(publisher.id).to.eql(expectedId);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Patched Publisher\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/publishers/{{publisherId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "publishers",
+                "{{publisherId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Publisher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {\r\n    pm.response.to.have.status(204);\r\n});\r\n\r\npm.test(\"Response body is empty\", function () {\r\n    pm.expect(pm.response.text()).to.be.empty;\r\n});\r\n\r\npm.test(\"Publisher was deleted successfully\", function () {\r\n    pm.expect(pm.response.code).to.eql(204);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/publishers/{{publisherId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "publishers",
+                "{{publisherId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Cases",
+      "item": [
+        {
+          "name": "Invalid Requests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Invalid book was rejected\", function () {\r\n    pm.expect(pm.response.code).to.not.eql(201);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Invalid Test Book\",\r\n  \"authorId\": 1,\r\n  \"publishingYear\": 1800,\r\n  \"publishingCompanyId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/books",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Non-existing Entity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404 Not Found\", function () {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"Non-existing book was not returned\", function () {\r\n    pm.expect(pm.response.code).to.not.eql(200);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/books/999999",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books",
+                "999999"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Foreign Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {\r\n    pm.response.to.have.status(400);\r\n});\r\n\r\npm.test(\"Error message explains invalid author\", function () {\r\n    const response = pm.response.json();\r\n\r\n    pm.expect(response).to.have.property(\"error\");\r\n    pm.expect(response.error.toLowerCase()).to.include(\"author\");\r\n});\r\n\r\npm.test(\"Book was not created\", function () {\r\n    pm.expect(pm.response.code).to.not.eql(201);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Invalid Foreign Key Test\",\r\n  \"authorId\": 999999,\r\n  \"publishingYear\": 2020,\r\n  \"publishingCompanyId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/books",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Conflict",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 409 Conflict\", function () {\r\n    pm.response.to.have.status(409);\r\n});\r\n\r\npm.test(\"Error message explains the conflict\", function () {\r\n    const response = pm.response.json();\r\n\r\n    pm.expect(response).to.have.property(\"error\");\r\n    pm.expect(response.error.toLowerCase()).to.include(\"book\");\r\n});\r\n\r\npm.test(\"Deletion was rejected\", function () {\r\n    pm.expect(pm.response.code).to.not.eql(204);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/authors/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "authors",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "bookId",
+      "value": ""
+    },
+    {
+      "key": "authorId",
+      "value": ""
+    },
+    {
+      "key": "publisherId",
+      "value": ""
+    }
+  ]
+}

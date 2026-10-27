@@ -84,7 +84,7 @@ async function main() {
     await graphql(
       `mutation ($a: Int!, $p: Int!) {
          createBook(title: "Smoke Test Book", authorId: $a, publishingCompanyId: $p, publishingYear: 2024) {
-           id title authorId publishingCompanyId publishingYear
+           id title publishingYear author { id } publisher { id }
          }
        }`,
       { a: author.id, p: publisher.id }
@@ -92,7 +92,7 @@ async function main() {
   ).data.createBook;
   check(
     'createBook returns the new book',
-    book.title === 'Smoke Test Book' && book.authorId === author.id && book.publishingCompanyId === publisher.id
+    book.title === 'Smoke Test Book' && book.author?.id === author.id && book.publisher?.id === publisher.id
   );
 
   // --- Read ---
@@ -104,6 +104,59 @@ async function main() {
 
   const publishers = (await graphql(`{ publishers { id name } }`)).data.publishers;
   check('publishers query returns a list', Array.isArray(publishers) && publishers.length > 0);
+
+  // --- Nesting: Book -> author / publisher ---
+  const bookWithRelations = (
+    await graphql(`query ($id: Int!) { book(id: $id) { id author { id name surname } publisher { id name } } }`, {
+      id: book.id,
+    })
+  ).data.book;
+  check(
+    'book resolves its author and publisher',
+    bookWithRelations.author?.id === author.id && bookWithRelations.publisher?.id === publisher.id
+  );
+
+  // --- Nesting: Author -> books ---
+  const authorBooks = (
+    await graphql(`{ authors { id books { id title } } }`)
+  ).data.authors.find((a) => a.id === author.id).books;
+  check('author nests its books', authorBooks.some((b) => b.id === book.id));
+
+  // --- Nesting: Publisher -> authors -> books (a single request walks the graph) ---
+  const nestedPublisher = (
+    await graphql(
+      `{
+         publishers {
+           id
+           name
+           authors { id name surname books { id title } }
+         }
+       }`
+    )
+  ).data.publishers.find((p) => p.id === publisher.id);
+  check(
+    'publisher nests authors which nest books',
+    nestedPublisher?.authors.some((a) => a.id === author.id && a.books.some((b) => b.id === book.id))
+  );
+
+  // --- Unions: search across the three types ---
+  const searchHits = (
+    await graphql(
+      `query ($t: String!) {
+         search(term: $t) {
+           __typename
+           ... on Book { id title }
+           ... on Author { id name surname }
+           ... on Publisher { id name }
+         }
+       }`,
+      { t: 'Smoke' }
+    )
+  ).data.search;
+  check(
+    'search returns a union with __typename per hit',
+    Array.isArray(searchHits) && searchHits.some((hit) => hit.__typename === 'Book' && hit.id === book.id)
+  );
 
   // --- Update ---
   const updatedBook = (
